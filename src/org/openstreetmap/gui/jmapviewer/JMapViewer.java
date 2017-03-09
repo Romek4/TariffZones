@@ -16,6 +16,7 @@ import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
@@ -168,7 +169,7 @@ public class JMapViewer extends JPanel implements TileLoaderListener {
             }
         });
         zoomSlider.setFocusable(false);
-        add(zoomSlider);
+        //add(zoomSlider);
         int size = 18;
         URL url = JMapViewer.class.getResource("images/plus.png");
         if (url != null) {
@@ -188,7 +189,7 @@ public class JMapViewer extends JPanel implements TileLoaderListener {
             }
         });
         zoomInButton.setFocusable(false);
-        add(zoomInButton);
+        //add(zoomInButton);
         url = JMapViewer.class.getResource("images/minus.png");
         if (url != null) {
             ImageIcon icon = new ImageIcon(url);
@@ -207,7 +208,7 @@ public class JMapViewer extends JPanel implements TileLoaderListener {
             }
         });
         zoomOutButton.setFocusable(false);
-        add(zoomOutButton);
+        //add(zoomOutButton);
     }
 
     /**
