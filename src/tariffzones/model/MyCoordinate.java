@@ -1,10 +1,10 @@
 package tariffzones.model;
 
-public class Coordinate {
+public class MyCoordinate {
 	private double latitude;
 	private double longitude;
 	
-	public Coordinate(double latitude, double longitude) {
+	public MyCoordinate(double latitude, double longitude) {
 		this.latitude = latitude;
 		this.longitude = longitude;
 	}

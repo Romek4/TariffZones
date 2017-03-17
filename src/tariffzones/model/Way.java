@@ -1,24 +1,26 @@
 package tariffzones.model;
 
 public class Way {
-	private String name;
-	private Coordinate startPoint, endPoint;
+	private int id;
+	private MyCoordinate startPoint, endPoint;
+	private double mins;
 	
-	public Way(String name, Coordinate startPoint, Coordinate endPoint) {
-		this.name = name;
+	public Way(int id, MyCoordinate startPoint, MyCoordinate endPoint, double mins) {
+		this.id = id;
 		this.startPoint = startPoint;
 		this.endPoint = endPoint;
+		this.mins = mins;
 	}
 	
-	public String getName() {
-		return this.name;
+	public int getId() {
+		return this.id;
 	}
 	
-	public Coordinate getStartPoint() {
+	public MyCoordinate getStartPoint() {
 		return this.startPoint;
 	}
 	
-	public Coordinate getEndPoint() {
+	public MyCoordinate getEndPoint() {
 		return this.endPoint;
 	}
 }
