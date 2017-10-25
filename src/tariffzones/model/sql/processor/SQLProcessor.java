@@ -74,6 +74,17 @@ public class SQLProcessor {
 			e.printStackTrace();
 		}
 	}
+
+	public void delete(String sqlStatement, Object[] values) {
+		try {
+			preparedStatement = (PreparedStatement) connection.prepareStatement(sqlStatement);
+			buildStatement(preparedStatement, values);
+			preparedStatement.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Delete error: " + e);
+			e.printStackTrace();
+		}
+	}
 	
 	public ResultSet getResultSet() {
 		return this.resultSet;

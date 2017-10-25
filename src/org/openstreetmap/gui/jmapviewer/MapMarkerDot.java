@@ -2,6 +2,8 @@
 package org.openstreetmap.gui.jmapviewer;
 
 import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import org.openstreetmap.gui.jmapviewer.interfaces.MapMarker;
 

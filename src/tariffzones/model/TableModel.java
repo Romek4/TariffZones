@@ -27,18 +27,18 @@ public class TableModel extends AbstractTableModel {
 
 	@Override
 	public int getRowCount() {
-		int pocetRiadkov = 0;
+		int rowCount = 0;
         if (resultSet == null) {
             return 0;
         }
         try {
         	resultSet.last();
-            pocetRiadkov = resultSet.getRow();
+        	rowCount = resultSet.getRow();
             resultSet.first();
         } catch (SQLException e) {
             Logger.getLogger(TableModel.class.getName()).log(Level.SEVERE, null, e);
         }
-        return pocetRiadkov;
+        return rowCount;
 	}
 
 	@Override
