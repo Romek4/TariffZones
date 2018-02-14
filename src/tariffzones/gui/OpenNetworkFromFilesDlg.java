@@ -1,14 +1,17 @@
 package tariffzones.gui;
 
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -18,31 +21,20 @@ import javax.swing.JTextField;
 
 import tariffzones.controller.OpenNetworkFromFilesDlgController;
 
-public class AddNetworkDlg extends JPanel {
-
-	private JTextField networkNameTf;
+public class OpenNetworkFromFilesDlg extends JPanel {
+	private JLabel iconLabel;
 	private JLabel stopsFileLb;
 	private JLabel waysFileLb;
 	private JButton stopsBtn;
 	private JButton waysBtn;
-	private JCheckBox dbImportChb;
-	private JComboBox countryCb;
-	private JComboBox networkTypeCb;
-	
-	private List countryIds;
-	private List networkTypes;
 	
 	private ActionListener actionListener;
-	
 	private OpenNetworkFromFilesDlgController controller;
-	
 
-	public AddNetworkDlg(List networkTypes, List countryIds) {
+	public OpenNetworkFromFilesDlg() {
 		super();
-		this.networkTypes = networkTypes;
-		this.countryIds = countryIds;
 		initialize();
-//		getController().setView(this);
+		getController().setView(this);
 		getController().activate();
 	}
 
@@ -55,76 +47,45 @@ public class AddNetworkDlg extends JPanel {
 		
 		gbc.gridx = 0;
 		gbc.gridy = 0;
-		this.add(new JLabel("Network name:"), gbc);
-
-		gbc.gridx = 1;
-		gbc.gridy = 0;
-		this.add(getNetworkNameTf(), gbc);
+		this.add(getIconLabel(), gbc);
 		
 		gbc.gridx = 0;
 		gbc.gridy = 1;
-		this.add(new JLabel("Network type:"), gbc);
-		
-		gbc.gridx = 1;
-		gbc.gridy = 1;
-		this.add(getNetworkTypeCb(), gbc);
+		this.add(new JLabel("Choose file for stops input: "), gbc);
 		
 		gbc.gridx = 0;
 		gbc.gridy = 2;
-		this.add(new JLabel("Country:"), gbc);
-		
-		gbc.gridx = 1;
-		gbc.gridy = 2;
-		this.add(getCountryCb(), gbc);
-		
-		gbc.gridx = 0;
-		gbc.gridy = 3;
-		this.add(new JLabel("Choose file for stops input:"), gbc);
-		
-		gbc.gridx = 1;
-		gbc.gridy = 3;
+		gbc.gridwidth = 2;
 		this.add(getStopsFileLb(), gbc);
 		
 		gbc.gridx = 2;
-		gbc.gridy = 3;
+		gbc.gridy = 2;
+		gbc.gridwidth = 1;
 		this.add(getStopsBtn(), gbc);
 		
 		gbc.gridx = 0;
-		gbc.gridy = 4;
-		this.add(new JLabel("Choose file for ways input:"), gbc);
+		gbc.gridy = 3;
+		this.add(new JLabel("Choose file for ways input: "), gbc);
 		
-		gbc.gridx = 1;
+		gbc.gridx = 0;
 		gbc.gridy = 4;
+		gbc.gridwidth = 2;
 		this.add(getWayFileLb(), gbc);
 		
 		gbc.gridx = 2;
 		gbc.gridy = 4;
+		gbc.gridwidth = 1;
 		this.add(getWaysBtn(), gbc);
-		
-		gbc.gridx = 0;
-		gbc.gridy = 5;
-//		this.add(getDBImportChb(), gbc);
 	}
 	
-	public JComboBox getCountryCb() {
-		if (countryCb == null) {
-			countryCb = new JComboBox<>();
-			if (countryIds != null) {
-				countryCb.setModel((new DefaultComboBoxModel(countryIds.toArray())));
-			}
+	private JLabel getIconLabel() {
+		if (iconLabel == null) {
+			iconLabel = new JLabel();
+			iconLabel.setFont(new Font(iconLabel.getFont().getName(), Font.BOLD, 16));
 		}
-		return countryCb;
+		return iconLabel;
 	}
-	public JComboBox getNetworkTypeCb() {
-		if (networkTypeCb == null) {
-			networkTypeCb = new JComboBox<>();
-			if (networkTypes != null) {
-				networkTypeCb.setModel((new DefaultComboBoxModel(networkTypes.toArray())));
-			}
-		}
-		return networkTypeCb;
-	}
-
+	
 	public JLabel getStopsFileLb() {
 		if (stopsFileLb == null) {
 			stopsFileLb = new JLabel("Not selected");
@@ -145,14 +106,6 @@ public class AddNetworkDlg extends JPanel {
 		return waysFileLb;
 	}
 
-	public JCheckBox getDBImportChb() {
-		if (dbImportChb == null) {
-			dbImportChb = new JCheckBox("Import data to database also");
-			dbImportChb.setSelected(true);
-		}
-		return dbImportChb;
-	}
-
 	private JButton getWaysBtn() {
 		if (waysBtn == null) {
 			waysBtn = new JButton("Browse");
@@ -167,15 +120,6 @@ public class AddNetworkDlg extends JPanel {
 		return stopsBtn;
 	}
 
-	public JTextField getNetworkNameTf() {
-		if (networkNameTf == null) {
-			networkNameTf = new JTextField();
-			networkNameTf.setPreferredSize(new Dimension(100, 19));
-			networkNameTf.setMinimumSize(new Dimension(100, 19));
-		}
-		return networkNameTf;
-	}
-	
 	public void registryListeners() {
 		getStopsBtn().addActionListener(getActionListener());
 		getWaysBtn().addActionListener(getActionListener());
@@ -211,8 +155,12 @@ public class AddNetworkDlg extends JPanel {
 		return controller;
 	}
 	
-	public List getCountryIds() {
-		return countryIds;
+	public void setIconLabelImg(Image img) {
+		getIconLabel().setIcon(new ImageIcon(img.getScaledInstance(32, 32, Image.SCALE_SMOOTH)));
+	}
+	
+	public void setIconLabelText(String text) {
+		getIconLabel().setText(text);
 	}
 	
 	public void showDlg() {
@@ -221,7 +169,7 @@ public class AddNetworkDlg extends JPanel {
 	}
 	
 	public static void main(String[] args) {
-		AddNetworkDlg dlg = new AddNetworkDlg(null, null);
+		OpenNetworkFromFilesDlg dlg = new OpenNetworkFromFilesDlg();
 		dlg.showDlg();
 	}
 }

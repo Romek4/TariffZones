@@ -1,5 +1,5 @@
 package tariffzones.tariffzonesprocessor.djikstra;
 
-public abstract class Node {
+public interface Node {
 	public abstract Object getKey();
 }

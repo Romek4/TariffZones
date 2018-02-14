@@ -1,80 +1,107 @@
 package tariffzones.gui;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.ScrollPane;
+import java.awt.Image;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
-import java.awt.event.ContainerEvent;
-import java.awt.event.ContainerListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseMotionListener;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JList;
+import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.event.TableModelListener;
 
-import org.openstreetmap.gui.jmapviewer.Coordinate;
-import org.openstreetmap.gui.jmapviewer.JMapViewer;
-import org.openstreetmap.gui.jmapviewer.MapMarkerDot;
+import org.jxmapviewer.JXMapViewer;
+import org.jxmapviewer.OSMTileFactoryInfo;
+import org.jxmapviewer.viewer.AbstractTileFactory;
+import org.jxmapviewer.viewer.DefaultTileFactory;
+import org.jxmapviewer.viewer.TileFactoryInfo;
+import org.jxmapviewer.viewer.GeoPosition;
+import org.jxmapviewer.viewer.TileFactory;
 
 import tariffzones.controller.TariffZonesController;
-import tariffzones.model.MyCoordinate;
-import tariffzones.model.TableEvent;
-import tariffzones.model.TableListener;
-import tariffzones.model.TableModel;
-import tariffzones.model.sql.processor.DataImporter;
+import tariffzones.map.MapViewer;
+import tariffzones.model.Network;
+import tariffzones.model.StopTableModel;
+import tariffzones.model.WayTableModel;
 
 public class TariffZonesView extends JFrame {
 	
 	private JPanel toolBoxPanel, tablePanel;
 	private JLabel infoLabel;
-	private JLabel latLonLabel;
-	private JMapViewer mapViewer;
+	
+	private JXMapViewer mapViewer;
 	private JTable stopTable, wayTable;
 	private JComboBox citiesCb;
 	private JComboBox stopCb;
 	private JComboBox wayCb;
 	
+	private JComboBox tileServersCb;
+	
+	private ButtonPl buttonPl;
+	
 	private JButton loadBtn;
+	private JButton openNetworkFromFilesBtn;
 	private JButton addNetworkBtn, removeNetoworkBtn;
-	private JButton addToFrstTblBtn, removeFromFrstTblBtn;
+	private JButton addStopBtn, removeFromFrstTblBtn;
 	private JButton addToScndTblBtn, removeFromScndTblBtn;
 	
+	private JMenuItem editMenuItem;  
+	private JMenuItem deleteMenuItem;
+	
+	private JMenuItem deleteFromStopTableMenuItem;
+	private JMenuItem deleteFromWayTableMenuItem;
+	
+	private JMenuItem exportStopsToCSVMenuItem;
+	private JMenuItem exportWaysToCSVMenuItem;
+	
+	private JPopupMenu mapPopupMenu;
+	private JPopupMenu stopTablePopupMenu;
+	private JPopupMenu wayTablePopupMenu;
+	
+	private MapToolboxPl mapToolboxPl;
+	
 	private boolean makeAPoint = false;
+	private boolean makeAWay = false;
+	private Point startPoint = null;
+	private Point endPoint = null;
 	private TariffZonesController tariffZonesController;
 	
 	private ListSelectionListener listSelectionListener;
 	private MouseListener mapViewerMouseListener;
 	private MouseMotionListener mapViewerMouseMotionListener;
 	private ActionListener actionListener;
-	private TableListener firstTableListener;
+	private TableModelListener stopTableListener;
 	
-	private static final String DEFAULT_INFO_MSG = "Use double click left mouse button for zoom in. Drag right mouse button to move.";
+	private static final String DEFAULT_INFO_MSG = "Use wheel for zoom. Drag left mouse button to move.";
 	private static final String MAKEPOINT_INFO_MSG = "Use left mouse button to point on the map.";
+	private static final String MAKEWAY_INFO_MSG = "Use left mouse button to select two stops the new way be between.";
 	
 	public TariffZonesView() {
 		tariffZonesController = new TariffZonesController();
@@ -83,16 +110,30 @@ public class TariffZonesView extends JFrame {
 		this.setLayout(new GridBagLayout());
 		this.setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 		this.setTitle("Tariff Zones Problem Solver");
-		initializeComponents();
+//		try {
+//			UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
+//		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException| UnsupportedLookAndFeelException e) {
+//			e.printStackTrace();
+//		}
 		
+		initializeComponents();
 		tariffZonesController.activate();
 	}
 
 	private void initializeComponents() {
 		JMenuBar menuBar = new JMenuBar();
-		JMenuItem fileMenuItem = new JMenuItem("File");
-		JMenuItem importMenuItem = new JMenuItem("Import");
-		JMenuItem helpMenuItem = new JMenuItem("Help");
+		
+		JMenu fileMenu = new JMenu("File");
+		JMenu exportMenu = new JMenu("Export");
+		
+		exportMenu.add(getExportStopsToCSVMenuItem());
+		exportMenu.add(getExportWaysToCSVMenuItem());
+		
+		fileMenu.add(exportMenu);
+		menuBar.add(fileMenu);
+		
+//		JMenuItem importMenuItem = new JMenuItem("Import");
+//		JMenuItem helpMenuItem = new JMenuItem("Help");
 		
 //		importMenuItem.addActionListener(new ActionListener() {
 //			
@@ -105,257 +146,248 @@ public class TariffZonesView extends JFrame {
 //		});
 		
 		GridBagConstraints gbc = new GridBagConstraints();
-		menuBar.add(fileMenuItem, gbc);
-		menuBar.add(importMenuItem, gbc);
-		menuBar.add(helpMenuItem, gbc);
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		gbc.gridwidth = 3;
+		gbc.weighty = 0.03;
+		gbc.anchor = GridBagConstraints.FIRST_LINE_START;
+		gbc.fill = GridBagConstraints.BOTH;
+//		menuBar.add(fileMenuItem, gbc);
+//		menuBar.add(importMenuItem, gbc);
+//		menuBar.add(helpMenuItem, gbc);
+//		
+//		GridBagConstraints menuBarConstraints = new GridBagConstraints();
+//		menuBarConstraints.gridx = 0;
+//		menuBarConstraints.gridy = 0;
+//		menuBarConstraints.gridheight = 1;
+//		menuBarConstraints.fill = GridBagConstraints.BOTH;
+//		this.add(menuBar, menuBarConstraints);
 		
-		GridBagConstraints menuBarConstraints = new GridBagConstraints();
-		menuBarConstraints.gridx = 0;
-		menuBarConstraints.gridy = 0;
-		menuBarConstraints.fill = GridBagConstraints.BOTH;
-		this.add(menuBar, menuBarConstraints);
+		this.add(menuBar, gbc);
+		
+		JPanel leftPanel = new JPanel();
+		leftPanel.setLayout(new GridBagLayout());
+		GridBagConstraints leftPanelgbc = new GridBagConstraints();
+		leftPanelgbc.gridx = 0;
+		leftPanelgbc.gridy = 1;
+//		leftPanelgbc.gridwidth = 1;
+//		leftPanelgbc.gridheight = 5;
+		leftPanelgbc.weightx = 0.1;
+		leftPanelgbc.weighty = 1;
+		leftPanelgbc.fill = GridBagConstraints.BOTH;		
 		
 		//ToolBoxPanel - upperleft
-		toolBoxPanel = new JPanel();
 		GridBagConstraints toolBoxPanelConstraints = new GridBagConstraints();
 		toolBoxPanelConstraints.gridx = 0;
-		toolBoxPanelConstraints.gridy = 1;
-		toolBoxPanelConstraints.gridwidth = 1;
-		toolBoxPanelConstraints.gridheight = 2;
-		toolBoxPanelConstraints.weightx = 0.2;
-		toolBoxPanelConstraints.insets = new Insets(1, 1, 1, 1);
+		toolBoxPanelConstraints.gridy = 0;
+		toolBoxPanelConstraints.weightx = 1;
+		toolBoxPanelConstraints.weighty = 0.05;
 		toolBoxPanelConstraints.fill = GridBagConstraints.BOTH;
-		this.add(toolBoxPanel, toolBoxPanelConstraints);
-		initializeToolBoxPanel();
+		leftPanel.add(getToolBoxPanel(), toolBoxPanelConstraints);
 		
-		//MapMarkerDotPanel - lowerleft
-		initializeTablePanel();
+		//TablePanel - lowerleft
+		GridBagConstraints tablePanelConstraints = new GridBagConstraints();
+		tablePanelConstraints.gridx = 0;
+		tablePanelConstraints.gridy = 1;
+		tablePanelConstraints.weightx = 1;
+		tablePanelConstraints.weighty = 0.95;
+		tablePanelConstraints.fill = GridBagConstraints.BOTH;
+		leftPanel.add(getTablePanel(), tablePanelConstraints);
+		
+		this.add(leftPanel, leftPanelgbc);
+		
+		JPanel rightPanel = new JPanel();
+		rightPanel.setLayout(new GridBagLayout());
+		GridBagConstraints rightPanelgbc = new GridBagConstraints();
+		rightPanelgbc.gridx = 2;
+		rightPanelgbc.gridy = 1;
+		rightPanelgbc.weightx = 0.9;
+		rightPanelgbc.weighty = 1;
+		rightPanelgbc.fill = GridBagConstraints.BOTH;
+		
+		GridBagConstraints mapViewerConstraints = new GridBagConstraints();
+		mapViewerConstraints.gridx = 0;
+		mapViewerConstraints.gridy = 0;
+		mapViewerConstraints.weighty = 0.9;
+		mapViewerConstraints.weightx = 0.9;
+		mapViewerConstraints.fill = GridBagConstraints.BOTH;
+		rightPanel.add(getMapViewer(), mapViewerConstraints);
+	
+		getMapToolboxPl().setBounds(10, 10, 250, 50);
+		getMapViewer().add(getMapToolboxPl());
+		
+		getTileServersCb().setBounds(300, 10, 200, 50);
+		getMapViewer().add(getTileServersCb());
+		
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+				leftPanel, rightPanel);
+		splitPane.setOneTouchExpandable(true);
+		GridBagConstraints splitPaneGbc = new GridBagConstraints();
+		splitPaneGbc.gridx = 1;
+		splitPaneGbc.gridy = 1;
+		splitPaneGbc.weighty = 1;
+		splitPaneGbc.fill = GridBagConstraints.BOTH;
+		this.add(splitPane, splitPaneGbc);
 		
 		//InfoPanel - bottom
 		JPanel infoPanel = new JPanel();
 		infoPanel.setBackground(Color.LIGHT_GRAY);
+		Dimension dimension = new Dimension(100, 25);
+		infoPanel.setMinimumSize(dimension);
+		infoPanel.setMaximumSize(dimension);
+		infoPanel.setPreferredSize(dimension);
 		infoPanel.add(getInfoLabel());
 		GridBagConstraints infoPanelConstraints = new GridBagConstraints();
-		infoPanelConstraints.gridx = 1;
-		infoPanelConstraints.gridy = 6;
-		infoPanelConstraints.gridwidth = 5;
-		infoPanelConstraints.gridheight = 1;
-		infoPanelConstraints.insets = new Insets(0, 1, 1, 1);
+		infoPanelConstraints.gridx = 0;
+		infoPanelConstraints.gridy = 1;
+//		infoPanelConstraints.gridwidth = 4;
+//		infoPanelConstraints.gridheight = 1;
 		infoPanelConstraints.fill = GridBagConstraints.BOTH;
-		this.add(infoPanel, infoPanelConstraints);
-
-		GridBagConstraints mapViewerConstraints = new GridBagConstraints();
-		mapViewerConstraints.gridx = 2;
-		mapViewerConstraints.gridy = 1;
-		mapViewerConstraints.gridheight = 4;
-		mapViewerConstraints.weightx = 0.7;
-		mapViewerConstraints.weighty = 1;
-		mapViewerConstraints.fill = GridBagConstraints.BOTH;
-		this.add(getMapViewer(), mapViewerConstraints);
+		rightPanel.add(infoPanel, infoPanelConstraints);
+		
+		this.add(rightPanel, rightPanelgbc);
 		
 		this.validate();
 		this.pack();
 	}
 
-	private void initializeTablePanel() {
-		tablePanel = new JPanel();
-		tablePanel.setBackground(Color.DARK_GRAY);
-		tablePanel.setLayout(new GridBagLayout());
-
-		GridBagConstraints stopComboBoxConstraints = new GridBagConstraints();
-		stopComboBoxConstraints.gridx = 0;
-		stopComboBoxConstraints.gridy = 1;
-		stopComboBoxConstraints.gridwidth = 3;
-		stopComboBoxConstraints.fill = GridBagConstraints.BOTH;
-		tablePanel.add(getStopCb(), stopComboBoxConstraints);
-		
-		GridBagConstraints stopTableConstraints = new GridBagConstraints();
-		stopTableConstraints.gridx = 0;
-		stopTableConstraints.gridy = 2;
-		stopTableConstraints.weighty = 0.5;
-		stopTableConstraints.gridwidth = 3;
-		stopTableConstraints.fill = GridBagConstraints.BOTH;
-		tablePanel.add(new JScrollPane(getStopTable()), stopTableConstraints);
-		
-		GridBagConstraints addToFrstTblBtnConstraints = new GridBagConstraints();
-		addToFrstTblBtnConstraints.gridx = 0;
-		addToFrstTblBtnConstraints.gridy = 3;
-		addToFrstTblBtnConstraints.weightx = 0.5;
-		addToFrstTblBtnConstraints.fill = GridBagConstraints.BOTH;
-		tablePanel.add(getAddToFrstTblBtn(), addToFrstTblBtnConstraints);
-		
-		GridBagConstraints removeFromFrstTblBtnConstraints = new GridBagConstraints();
-		removeFromFrstTblBtnConstraints.gridx = 1;
-		removeFromFrstTblBtnConstraints.gridy = 3;
-		removeFromFrstTblBtnConstraints.weightx = 0.5;
-		removeFromFrstTblBtnConstraints.fill = GridBagConstraints.BOTH;
-		tablePanel.add(getRemoveFromFrstTblBtn(), removeFromFrstTblBtnConstraints);
-		
-		GridBagConstraints wayComboBoxConstraints = new GridBagConstraints();
-		wayComboBoxConstraints.gridx = 0;
-		wayComboBoxConstraints.gridy = 4;
-		wayComboBoxConstraints.gridwidth = 3;
-		wayComboBoxConstraints.fill = GridBagConstraints.BOTH;
-		tablePanel.add(getWayCb(), wayComboBoxConstraints);
-		
-		GridBagConstraints wayTableConstraints = new GridBagConstraints();
-		wayTableConstraints.gridx = 0;
-		wayTableConstraints.gridy = 5;
-		wayTableConstraints.weighty = 0.5;
-		wayTableConstraints.gridwidth = 3;
-		wayTableConstraints.fill = GridBagConstraints.BOTH;
-		tablePanel.add(new JScrollPane(getWayTable()), wayTableConstraints);
-		
-		GridBagConstraints addToScndTblBtnConstraints = new GridBagConstraints();
-		addToScndTblBtnConstraints.gridx = 0;
-		addToScndTblBtnConstraints.gridy = 6;
-		addToScndTblBtnConstraints.weightx = 0.5;
-		addToScndTblBtnConstraints.fill = GridBagConstraints.BOTH;
-		tablePanel.add(getAddToScndTblBtn(), addToScndTblBtnConstraints);
-		
-		GridBagConstraints removeFromScndTblBtnConstraints = new GridBagConstraints();
-		removeFromScndTblBtnConstraints.gridx = 1;
-		removeFromScndTblBtnConstraints.gridy = 6;
-		removeFromScndTblBtnConstraints.weightx = 0.5;
-		removeFromScndTblBtnConstraints.fill = GridBagConstraints.BOTH;
-		tablePanel.add(getRemoveFromScndTblBtn(), removeFromScndTblBtnConstraints);
-		
-		GridBagConstraints tablePanelConstraints = new GridBagConstraints();
-		tablePanelConstraints.gridx = 0;
-		tablePanelConstraints.gridy = 4;
-		tablePanelConstraints.weightx = 0.2;
-		tablePanelConstraints.fill = GridBagConstraints.BOTH;
-		tablePanelConstraints.insets = new Insets(0, 1, 1, 1);
-		this.add(tablePanel, tablePanelConstraints);
+	private JPanel getTablePanel() {
+		if (tablePanel == null) {
+			tablePanel = new JPanel();
+			tablePanel.setLayout(new GridBagLayout());
+	
+			GridBagConstraints stopComboBoxConstraints = new GridBagConstraints();
+			stopComboBoxConstraints.gridx = 0;
+			stopComboBoxConstraints.gridy = 0;
+			stopComboBoxConstraints.weightx = 1;
+			stopComboBoxConstraints.fill = GridBagConstraints.BOTH;
+			tablePanel.add(getStopCb(), stopComboBoxConstraints);
+			
+			GridBagConstraints stopTableConstraints = new GridBagConstraints();
+			stopTableConstraints.gridx = 0;
+			stopTableConstraints.gridy = 1;
+			stopTableConstraints.weightx = 1;
+			stopTableConstraints.weighty = 0.5;
+			stopTableConstraints.fill = GridBagConstraints.BOTH;
+			tablePanel.add(new JScrollPane(getStopTable()), stopTableConstraints);
+			
+			GridBagConstraints wayComboBoxConstraints = new GridBagConstraints();
+			wayComboBoxConstraints.gridx = 0;
+			wayComboBoxConstraints.gridy = 2;
+			wayComboBoxConstraints.weightx = 1;
+			wayComboBoxConstraints.fill = GridBagConstraints.BOTH;
+			tablePanel.add(getWayCb(), wayComboBoxConstraints);
+			
+			GridBagConstraints wayTableConstraints = new GridBagConstraints();
+			wayTableConstraints.gridx = 0;
+			wayTableConstraints.gridy = 3;
+			wayTableConstraints.weightx = 1;
+			wayTableConstraints.weighty = 0.5;
+			wayTableConstraints.fill = GridBagConstraints.BOTH;
+			tablePanel.add(new JScrollPane(getWayTable()), wayTableConstraints);
+		}
+		return tablePanel;
 	}
 
-	private void initializeToolBoxPanel() {
-		toolBoxPanel.setBackground(Color.LIGHT_GRAY);
-		toolBoxPanel.setLayout(new GridBagLayout());
-		
-		GridBagConstraints citiesComboBoxConstraints = new GridBagConstraints();
-		citiesComboBoxConstraints.gridx = 0;
-		citiesComboBoxConstraints.gridy = 0;
-		citiesComboBoxConstraints.weightx = 0.7;
-		citiesComboBoxConstraints.fill = GridBagConstraints.BOTH;
-		toolBoxPanel.add(getCitiesCb(), citiesComboBoxConstraints);
-		
-		GridBagConstraints loadButtonConstraints = new GridBagConstraints();
-		loadButtonConstraints.gridx = 1;
-		loadButtonConstraints.gridy = 0;
-		loadButtonConstraints.weightx = 0.3;
-		loadButtonConstraints.fill = GridBagConstraints.BOTH;
-		toolBoxPanel.add(getLoadBtn(), loadButtonConstraints);
-		
-		GridBagConstraints addNetworkBtnConstraints = new GridBagConstraints();
-		addNetworkBtnConstraints.gridx = 0;
-		addNetworkBtnConstraints.gridy = 1;
-		addNetworkBtnConstraints.weightx = 0.5;
-		addNetworkBtnConstraints.fill = GridBagConstraints.BOTH;
-		toolBoxPanel.add(getAddNetworkBtn(), addNetworkBtnConstraints);
-		
-		GridBagConstraints removeNetworkBtnConstraints = new GridBagConstraints();
-		removeNetworkBtnConstraints.gridx = 1;
-		removeNetworkBtnConstraints.gridy = 1;
-		removeNetworkBtnConstraints.weightx = 0.5;
-		removeNetworkBtnConstraints.fill = GridBagConstraints.BOTH;
-		toolBoxPanel.add(getRemoveNetworkBtn(), removeNetworkBtnConstraints);
-		
-//		JLabel toolBoxPanelNameLabel = new JLabel("ToolBox");
-//		GridBagConstraints toolBoxPanelNameLabelConstraints = new GridBagConstraints();
-//		toolBoxPanelNameLabelConstraints.gridx = 0;
-//		toolBoxPanelNameLabelConstraints.gridy = 1;
-//		toolBoxPanelNameLabelConstraints.gridwidth = 2;
-//		toolBoxPanelNameLabelConstraints.gridheight = 1;
-//		toolBoxPanelNameLabelConstraints.insets = new Insets(4, 4, 4, 4);
-//		//toolBoxPanelNameLabelConstraints.weighty = 0.5;
-//		//toolBoxPanelNameLabelConstraints.anchor = GridBagConstraints.PAGE_START;
-//		toolBoxPanel.add(toolBoxPanelNameLabel, toolBoxPanelNameLabelConstraints);
-		
-//		JLabel circleIcon = new JLabel();
-//		circleIcon.setIcon(new ImageIcon("orange-circle-png-3.png"));
-//		GridBagConstraints circleIconConstraints = new GridBagConstraints();
-//		circleIconConstraints.gridx = 0;
-//		circleIconConstraints.gridy = 1;
-//		circleIconConstraints.gridwidth = 1;
-//		circleIconConstraints.gridheight = 1;
-//		toolBoxPanel.add(circleIcon, circleIconConstraints);
-		
-//		JButton mapMakerDotBtn = new JButton("Make a point");
-//		//mapMakerDotBtn.setIcon(new ImageIcon("orange-circle-png-3.png"));
-//		mapMakerDotBtn.addActionListener(new ActionListener() {
-//			@Override
-//			public void actionPerformed(ActionEvent e) {
-//				getInfoLabel().setText(MAKEPOINT_INFO_MSG);
-//				makeAPointButtonPressed = true;
-//			}
-//		});
-//		GridBagConstraints mapMakerDotBtnConstraints = new GridBagConstraints();
-//		mapMakerDotBtnConstraints.gridx = 0;
-//		mapMakerDotBtnConstraints.gridy = 2;
-//		mapMakerDotBtnConstraints.gridwidth = 2;
-//		mapMakerDotBtnConstraints.gridheight = 1;
-//		mapMakerDotBtnConstraints.weightx = 1;
-//		mapMakerDotBtnConstraints.fill = GridBagConstraints.BOTH;
-//		toolBoxPanel.add(mapMakerDotBtn, mapMakerDotBtnConstraints);
+	private JPanel getToolBoxPanel() {
+		if (toolBoxPanel == null) {
+			toolBoxPanel = new JPanel();
+			toolBoxPanel.setLayout(new GridBagLayout());
+			
+			GridBagConstraints citiesComboBoxConstraints = new GridBagConstraints();
+			citiesComboBoxConstraints.gridx = 0;
+			citiesComboBoxConstraints.gridy = 0;
+			citiesComboBoxConstraints.weightx = 0.5;
+			citiesComboBoxConstraints.weighty = 0.3;
+			citiesComboBoxConstraints.fill = GridBagConstraints.BOTH;
+			toolBoxPanel.add(getCitiesCb(), citiesComboBoxConstraints);
+			
+			GridBagConstraints loadButtonConstraints = new GridBagConstraints();
+			loadButtonConstraints.gridx = 0;
+			loadButtonConstraints.gridy = 1;
+			loadButtonConstraints.weightx = 0.5;
+			loadButtonConstraints.weighty = 0.4;
+			loadButtonConstraints.fill = GridBagConstraints.BOTH;
+			toolBoxPanel.add(getLoadBtn(), loadButtonConstraints);
+			
+			GridBagConstraints removeNetworkBtnConstraints = new GridBagConstraints();
+			removeNetworkBtnConstraints.gridx = 0;
+			removeNetworkBtnConstraints.gridy = 2;
+			removeNetworkBtnConstraints.weightx = 0.5;
+			removeNetworkBtnConstraints.weighty = 0.3;
+			removeNetworkBtnConstraints.fill = GridBagConstraints.BOTH;
+			toolBoxPanel.add(getRemoveNetworkBtn(), removeNetworkBtnConstraints);
+			
+			GridBagConstraints addNetworkBtnConstraints = new GridBagConstraints();
+			addNetworkBtnConstraints.gridx = 1;
+			addNetworkBtnConstraints.gridy = 0;
+			addNetworkBtnConstraints.gridheight = 3;
+			addNetworkBtnConstraints.weightx = 0.5;
+			addNetworkBtnConstraints.weighty = 1;
+			addNetworkBtnConstraints.fill = GridBagConstraints.BOTH;
+			toolBoxPanel.add(getOpenNetworkFromFilesBtn(), addNetworkBtnConstraints);
+		}
+		return toolBoxPanel;
 	}
 
 	public void clearMapViewer() {
-		getMapViewer().getMapMarkerList().clear();
-		getMapViewer().getMapPolygonList().clear();
+//		getMapViewer().getMapMarkerList().clear();
+//		getMapViewer().getMapPolygonList().clear();
 	}
 	
-	private JButton getAddNetworkBtn() {
-		if (addNetworkBtn == null) {
-			addNetworkBtn = new JButton("Add new");
+	private JButton getOpenNetworkFromFilesBtn() {
+		if (openNetworkFromFilesBtn == null) {
+			openNetworkFromFilesBtn = new JButton();
+			openNetworkFromFilesBtn.setSize(new Dimension(48, 48));
+			openNetworkFromFilesBtn.setContentAreaFilled(true);
+			try {
+				Image img = ImageIO.read(new FileInputStream("resources/images/openIcon.png"));
+				openNetworkFromFilesBtn.setIcon(new ImageIcon(img.getScaledInstance(openNetworkFromFilesBtn.getWidth(), openNetworkFromFilesBtn.getHeight(), Image.SCALE_SMOOTH)));
+				openNetworkFromFilesBtn.setToolTipText("Read network from files");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
-		return addNetworkBtn;
+		return openNetworkFromFilesBtn;
 	}
 	
 	private JButton getRemoveNetworkBtn() {
 		if (removeNetoworkBtn == null) {
-			removeNetoworkBtn = new JButton("Delete");
+			removeNetoworkBtn = new JButton();
+			removeNetoworkBtn.setSize(new Dimension(24, 24));
+			removeNetoworkBtn.setContentAreaFilled(true);
+			try {
+				Image img = ImageIO.read(new FileInputStream("resources/images/removeIcon.png"));
+				removeNetoworkBtn.setIcon(new ImageIcon(img.getScaledInstance(removeNetoworkBtn.getWidth(), removeNetoworkBtn.getHeight(), Image.SCALE_SMOOTH)));
+				removeNetoworkBtn.setToolTipText("Delete network");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		return removeNetoworkBtn;
 	}
 	
-	private JButton getAddToFrstTblBtn() {
-		if (addToFrstTblBtn == null) {
-			addToFrstTblBtn = new JButton("Add new");
-			addToFrstTblBtn.setEnabled(false);
-		}
-		return addToFrstTblBtn;
+	private JButton getSolveBtn() {
+		return getMapToolboxPl().getSolveBtn();
 	}
 	
-	private JButton getRemoveFromFrstTblBtn() {
-		if (removeFromFrstTblBtn == null) {
-			removeFromFrstTblBtn = new JButton("Delete");
-			removeFromFrstTblBtn.setEnabled(false);
-		}
-		return removeFromFrstTblBtn;
+	private JButton getAddStopBtn() {
+		return getMapToolboxPl().getPointBtn();
 	}
 	
-	private JButton getAddToScndTblBtn() {
-		if (addToScndTblBtn == null) {
-			addToScndTblBtn = new JButton("Add new");
-			addToScndTblBtn.setEnabled(false);
-		}
-		return addToScndTblBtn;
+	private JButton getAddWayBtn() {
+		return getMapToolboxPl().getWayBtn();
 	}
 	
-	private JButton getRemoveFromScndTblBtn() {
-		if (removeFromScndTblBtn == null) {
-			removeFromScndTblBtn = new JButton("Delete");
-			removeFromScndTblBtn.setEnabled(false);
-		}
-		return removeFromScndTblBtn;
+	private JButton getSaveBtn() {
+		return getMapToolboxPl().getSaveBtn();
 	}
 
 	public JComboBox getWayCb() {
 		if (wayCb == null) {
 			wayCb = new JComboBox<String>();
 			wayCb.addItem("Ways");
-			wayCb.addItem("Bus stops");
+			wayCb.addItem("Stops");
 		}
 		return wayCb;
 	}
@@ -363,48 +395,120 @@ public class TariffZonesView extends JFrame {
 	public JComboBox getStopCb() {
 		if (stopCb == null) {
 			stopCb = new JComboBox<String>();
-			stopCb.addItem("Bus stops");
+			stopCb.addItem("Stops");
 			stopCb.addItem("Ways");
 		}
 		return stopCb;
 	}
 	
-	public JMapViewer getMapViewer() {
+	public JComboBox getTileServersCb() {
+		if (tileServersCb == null) {
+			tileServersCb = new JComboBox();
+			tileServersCb.setFont(new Font(tileServersCb.getFont().getName(), Font.BOLD, 14));
+	        tileServersCb.setMaximumRowCount(3);
+		}
+		return tileServersCb;
+	}
+	
+	public MapToolboxPl getMapToolboxPl() {
+		if (mapToolboxPl == null) {
+			mapToolboxPl = new MapToolboxPl();
+		}
+		return mapToolboxPl;
+	}
+	
+	public JXMapViewer getMapViewer() {
 		if (mapViewer == null) {
-			mapViewer = new JMapViewer();
-			mapViewer.setLayout(new BorderLayout());
-			mapViewer.add(getLatLonLabel(), BorderLayout.SOUTH);
+			mapViewer = new MapViewer();
+
+			// Create a TileFactoryInfo for OpenStreetMap
+			TileFactoryInfo info = new OSMTileFactoryInfo();
+			DefaultTileFactory tileFactory = new DefaultTileFactory(info);
+			mapViewer.setTileFactory(tileFactory);
+			
+			// Use 8 threads in parallel to load the tiles
+			tileFactory.setThreadPoolSize(8);
+
+			// Set the focus
+			GeoPosition slovakia = new GeoPosition(48.8, 19.2);
+
+			mapViewer.setZoom(15);
+			mapViewer.setAddressLocation(slovakia);
 		}
 		return mapViewer;
 	}
 	
-	private MouseMotionListener getMapViewerMouseMotionListener() {
-		if (mapViewerMouseMotionListener == null) {
-			mapViewerMouseMotionListener = new MouseMotionAdapter() {
-				@Override
-				public void mouseMoved(MouseEvent e) {
-					latLonLabel.setText("[" + Double.toString(mapViewer.getPosition(e.getX(), e.getY()).getLat()) + ", "
-											+ Double.toString(mapViewer.getPosition(e.getX(), e.getY()).getLon()) + "]");
-				}
-			};
-		}
-		return mapViewerMouseMotionListener;
-	}
-	
-	private MouseListener getMapViewerMouseListener() {
+	private MouseListener getMouseListener() {
 		if (mapViewerMouseListener == null) {
 			mapViewerMouseListener = new MouseAdapter() {
 				@Override
 				public void mouseClicked(MouseEvent e) {
-					
-					if (makeAPoint) {
-						getController().addBusStop(e.getX(), e.getY());
-						makeAPoint = false;
+					if (e.getSource().equals(getMapViewer())) {
+						if (SwingUtilities.isLeftMouseButton(e)) {
+							if (makeAPoint) {
+								getController().addBusStop(e.getPoint());
+								makeAPoint = false;
+							}
+							else if (makeAWay) {
+								//pick first stop
+								if (startPoint == null) {
+									getInfoLabel().setText("Click on begining stop of new way");
+									if (getController().checkMousePositionForStop(e.getPoint()) != null) {
+										startPoint = e.getPoint();
+										getInfoLabel().setText("Pick second stop");
+									}
+									return;
+								}
+								//pick second stop
+								if (endPoint == null) {
+									getInfoLabel().setText("Click on ending stop of new way");
+									if (getController().checkMousePositionForStop(e.getPoint()) != null) {
+										endPoint = e.getPoint();
+										getInfoLabel().setText(DEFAULT_INFO_MSG);
+									}
+								}
+								
+								if (startPoint != null && endPoint != null) {
+									getController().addWay(startPoint, endPoint);
+								}
+								else { return; }
+								
+								startPoint = null;
+								endPoint = null;
+								makeAWay = false;
+							}
+						}
+						else if (SwingUtilities.isRightMouseButton(e)) {
+							getController().checkForStopAndShowPopup(e.getPoint());
+						}
+					}
+					else if (e.getSource().equals(getStopTable())) {
+						if (SwingUtilities.isRightMouseButton(e)) {
+							getStopTablePopupMenu().show(getStopTable(), e.getX(), e.getY());
+						}
+					}
+					else if (e.getSource().equals(getWayTable())) {
+						if (SwingUtilities.isRightMouseButton(e)) {
+							getWayTablePopupMenu().show(getWayTable(), e.getX(), e.getY());
+						}
 					}
 				}
 			};
 		}
 		return mapViewerMouseListener;
+	}
+	
+	private MouseMotionListener getMapViewerMousemotionListener() {
+		if (mapViewerMouseMotionListener == null) {
+			mapViewerMouseMotionListener = new MouseAdapter() {
+				
+				@Override
+				public void mouseMoved(MouseEvent e) {
+					getController().checkForStopAndShowTooltip(e.getPoint());
+				}
+			};
+		}
+		return mapViewerMouseMotionListener;
 	}
 	
 	private ActionListener getActionListener() {
@@ -415,75 +519,68 @@ public class TariffZonesView extends JFrame {
 				public void actionPerformed(ActionEvent e) {
 					//LoadBtn
 					if (e.getSource().equals(getLoadBtn())) {
+						if (getController().isUnsavedChanges()) {
+							int check = JOptionPane.showConfirmDialog(getContentPane(), "There are some unsaved changes! Do you want to save changes before reloading of network?", "Stop delete", JOptionPane.YES_NO_OPTION);
+							if (check == 0) {
+								getController().saveChangesToDatabase();
+							}
+						}
+						
 						clearMapViewer();
 						Object selectedItem = getCitiesCb().getSelectedItem();
 						if (selectedItem != null) {
-							getController().addStopsInNetworkToMap(selectedItem.toString());
-							updateBtns();
+							getController().addStopsInNetworkToMap(((Network)selectedItem).getNetworkName());
+							getController().addWaysBetweenStopsInCityToMap(((Network)selectedItem).getNetworkName());
 						}
 					}
 					//first combobox
 					else if (e.getSource().equals(getStopCb())) {
-						if (getStopCb().getSelectedItem().toString().equals("Bus stops")) {
-							getController().fillTableWithStops(getStopTable(), getController().getLoadedNetworkName()); //TODO: not to load it from db again - maybe its not that bad		
+						if (getStopCb().getSelectedItem().toString().equals("Stops")) {
+							getController().fillTableWithStops(getStopTable());
 						}
 						else {
-							getController().fillTableWithWays(getStopTable(), getController().getLoadedNetworkName());
+							getController().fillTableWithWays(getStopTable());
 						}
 					}
 					//second combobox
 					else if (e.getSource().equals(getWayCb())) {
-						if (getWayCb().getSelectedItem().toString().equals("Bus stops")) {
-							getController().fillTableWithStops(getWayTable(), getController().getLoadedNetworkName());
+						if (getWayCb().getSelectedItem().toString().equals("Stops")) {
+							getController().fillTableWithStops(getWayTable());
 						}
 						else {
-							getController().fillTableWithWays(getWayTable(), getController().getLoadedNetworkName());
+							getController().fillTableWithWays(getWayTable());
 						}
 					}
-					//getAddToFrstTblBtn
-					else if (e.getSource().equals(getAddToFrstTblBtn())) {
-						if (getStopCb().getSelectedItem().toString().equals("Bus stops")) {
+					else if (e.getSource().equals(getTileServersCb())) {
+						TileFactory tileFactory = (TileFactory) getTileServersCb().getSelectedItem();
+						((AbstractTileFactory) tileFactory).setThreadPoolSize(8);
+						getMapViewer().setTileFactory(tileFactory);
+						
+					}
+					else if(e.getSource().equals(getSolveBtn())) {
+						getController().solveTariffZonesProblem();
+					}
+					//getAddStopBtn
+					else if (e.getSource().equals(getAddStopBtn())) {
 							getInfoLabel().setText(MAKEPOINT_INFO_MSG);
 							makeAPoint = true;
-						}
-						else {
-							//TODO: add way
+					}
+					//getAddWayBtn
+					else if (e.getSource().equals(getAddWayBtn())) {
+							getInfoLabel().setText(MAKEWAY_INFO_MSG);
+							makeAWay = true;
+					}
+					else if(e.getSource().equals(getSaveBtn())) {
+						if (getController().saveChangesToDatabase()) {
+							JOptionPane.showMessageDialog(getContentPane(), "Data saved.", "Save Data To Database", JOptionPane.INFORMATION_MESSAGE);
 						}
 					}
-					//getRemoveFromFrstTblBtn
-					else if (e.getSource().equals(getRemoveFromFrstTblBtn())) {
-						if (getStopCb().getSelectedItem().toString().equals("Bus stops")) {
-							int stopNumber = (int) getStopTable().getValueAt(getStopTable().getSelectedRow(), 0);
-							int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete this stop?", "Stop delete", JOptionPane.YES_NO_OPTION);
-							if (check == 0) {
-								getController().deleteBusStop(getController().getLoadedNetworkName(), stopNumber);
-							}
+					else if (e.getSource().equals(getOpenNetworkFromFilesBtn())) {
+						try {
+							getController().openNetworkFromFiles();
+						} catch (IOException e1) {
+							JOptionPane.showMessageDialog(getRootPane(), e1.toString(), "Read network from files", JOptionPane.ERROR_MESSAGE);
 						}
-						else {
-							//TODO: delete way
-						}
-					}
-					//getAddToScndTblBtn
-					else if (e.getSource().equals(getAddToScndTblBtn())) {
-						if (getWayCb().getSelectedItem().toString().equals("Bus stops")) {
-							getInfoLabel().setText(MAKEPOINT_INFO_MSG);
-							makeAPoint = true;
-						}
-						else {
-							//TODO: add way
-						}
-					}
-					//getRemoveFromScndTblBtn
-					else if (e.getSource().equals(getRemoveFromScndTblBtn())) {
-						if (getWayCb().getSelectedItem().toString().equals("Bus stops")) {
-							//TODO: delete bus stop
-						}
-						else {
-							//TODO: delete way
-						}
-					}
-					else if (e.getSource().equals(getAddNetworkBtn())) {
-						getController().addNetwork();
 					}
 					else if (e.getSource().equals(getRemoveNetworkBtn())) {
 						if (getCitiesCb().getSelectedItem() != null) {
@@ -493,34 +590,57 @@ public class TariffZonesView extends JFrame {
 							}
 						}
 					}
+					else if (e.getSource().equals(getExportStopsToCSVMenuItem())) {
+						getController().exportStops();
+					}
+					else if (e.getSource().equals(getExportWaysToCSVMenuItem())) {
+						getController().exportWays();
+					}
+					else if (e.getSource().equals(getEditMenuItem())) {
+						getController().editStop(getController().getLastPickedStop());
+					}
+					else if (e.getSource().equals(getDeleteMenuItem())) {
+						int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete this stop?", "Stop delete", JOptionPane.YES_NO_OPTION);
+						if (check == 0) {
+							getController().deleteStop(getController().getLastPickedStop());
+							getController().resetLastPickedStopNumber();
+						}
+					}
+					else if (e.getSource().equals(getDeleteFromStopTableMenuItem())) {
+						if (getStopTable().getSelectedRowCount() == 0) {
+							return;
+						}
+						
+						int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected stop/s?", "Stop Delete", JOptionPane.YES_NO_OPTION);
+						if (check == 0) {
+							if (getStopCb().getSelectedItem().toString().equals("Stops")) {
+								getController().deleteStops(((StopTableModel)getStopTable().getModel()).getStopsAt(getStopTable().getSelectedRows()));
+							}
+							else {
+								getController().deleteWays(((WayTableModel)getStopTable().getModel()).getWaysAt(getStopTable().getSelectedRows()));
+							}
+						}
+					}
+					else if (e.getSource().equals(getDeleteFromWayTableMenuItem())) {
+						if (getWayTable().getSelectedRowCount() == 0) {
+							return;
+						}
+						
+						int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected way/s?", "Way Delete", JOptionPane.YES_NO_OPTION);
+						if (check == 0) {
+							if (getStopCb().getSelectedItem().toString().equals("Stops")) {
+								getController().deleteStops(((StopTableModel)getWayTable().getModel()).getStopsAt(getWayTable().getSelectedRows()));
+							}
+							else {
+								getController().deleteWays(((WayTableModel)getWayTable().getModel()).getWaysAt(getWayTable().getSelectedRows()));
+							}
+						}
+					}
 				}
 			};
 		}
 		
 		return actionListener;
-	}
-	
-	private void updateBtns() {
-		if (getController().getLoadedNetworkName() != null) {
-			getAddToFrstTblBtn().setEnabled(true);
-			getAddToScndTblBtn().setEnabled(true);
-			getRemoveFromFrstTblBtn().setEnabled(true);
-			getRemoveFromScndTblBtn().setEnabled(true);
-		}
-	}
-	
-	public TableListener getFirstTableListener() {
-		if (firstTableListener == null) {
-			firstTableListener = new TableListener() {
-				
-				@Override
-				public void rowSelected(TableEvent e) {
-					System.out.println("row selected");
-					
-				}
-			};
-		}
-		return firstTableListener;
 	}
 	
 	public ListSelectionListener getListSelectionListener() {
@@ -534,7 +654,7 @@ public class TariffZonesView extends JFrame {
 						for (int i = 0; i < getStopTable().getSelectedRows().length; i++) {
 							stopNumbers.add((Integer) getStopTable().getValueAt(getStopTable().getSelectedRows()[i], 0));
 						}
-						getController().highligthBusStop(stopNumbers);
+//TODO:						getController().highligthBusStop(stopNumbers, Color.RED);
 					}
 				}
 			};
@@ -543,29 +663,157 @@ public class TariffZonesView extends JFrame {
 	}
 	
 	public void registryListeners() {
-		getMapViewer().addMouseMotionListener(getMapViewerMouseMotionListener());
-		getMapViewer().addMouseListener(getMapViewerMouseListener());
+		getMapViewer().addMouseListener(getMouseListener());
+		getMapViewer().addMouseMotionListener(getMapViewerMousemotionListener());
 		getLoadBtn().addActionListener(getActionListener());
 		getStopCb().addActionListener(getActionListener());
 		getWayCb().addActionListener(getActionListener());
-		getAddToFrstTblBtn().addActionListener(getActionListener());
-		getRemoveFromFrstTblBtn().addActionListener(getActionListener());
-		getAddNetworkBtn().addActionListener(getActionListener());
+		getTileServersCb().addActionListener(getActionListener());
+		getAddStopBtn().addActionListener(getActionListener());
+		getAddWayBtn().addActionListener(getActionListener());
+		getOpenNetworkFromFilesBtn().addActionListener(getActionListener());
 		getRemoveNetworkBtn().addActionListener(getActionListener());
+		getSolveBtn().addActionListener(getActionListener());
+		getExportStopsToCSVMenuItem().addActionListener(getActionListener());
+		getExportWaysToCSVMenuItem().addActionListener(getActionListener());
+		getEditMenuItem().addActionListener(getActionListener());
+		getDeleteMenuItem().addActionListener(getActionListener());
+		getDeleteFromStopTableMenuItem().addActionListener(getActionListener());
 		getStopTable().getSelectionModel().addListSelectionListener(getListSelectionListener());
+		getStopTable().addMouseListener(getMouseListener());
 	}
 	
 	public void unregistryListeners() {
-		getMapViewer().removeMouseMotionListener(getMapViewerMouseMotionListener());
-		getMapViewer().removeMouseListener(getMapViewerMouseListener());
+		getMapViewer().removeMouseListener(getMouseListener());
+		getMapViewer().removeMouseMotionListener(getMapViewerMousemotionListener());
 		getLoadBtn().removeActionListener(getActionListener());
 		getStopCb().removeActionListener(getActionListener());
 		getWayCb().removeActionListener(getActionListener());
-		getAddToFrstTblBtn().removeActionListener(getActionListener());
-		getRemoveFromFrstTblBtn().removeActionListener(getActionListener());
-		getAddNetworkBtn().removeActionListener(getActionListener());
+		getTileServersCb().removeActionListener(getActionListener());
+		getAddStopBtn().removeActionListener(getActionListener());
+		getAddWayBtn().removeActionListener(getActionListener());
+		getOpenNetworkFromFilesBtn().removeActionListener(getActionListener());
 		getRemoveNetworkBtn().removeActionListener(getActionListener());
+		getSolveBtn().removeActionListener(getActionListener());
+		getExportStopsToCSVMenuItem().removeActionListener(getActionListener());
+		getExportWaysToCSVMenuItem().removeActionListener(getActionListener());
+		getEditMenuItem().removeActionListener(getActionListener());
+		getDeleteMenuItem().removeActionListener(getActionListener());
+		getDeleteFromStopTableMenuItem().removeActionListener(getActionListener());
 		getStopTable().getSelectionModel().removeListSelectionListener(getListSelectionListener());
+		getStopTable().removeMouseListener(getMouseListener());
+	}
+	
+	public JPopupMenu getStopTablePopupMenu() {
+		if (stopTablePopupMenu == null) {
+			stopTablePopupMenu = new JPopupMenu("Manipulate");
+			stopTablePopupMenu.add(getDeleteFromStopTableMenuItem());
+		}
+		
+		return stopTablePopupMenu;
+	}
+	
+	public JPopupMenu getWayTablePopupMenu() {
+		if (wayTablePopupMenu == null) {
+			wayTablePopupMenu = new JPopupMenu("Manipulate");
+			wayTablePopupMenu.add(getDeleteFromWayTableMenuItem());
+		}
+		
+		return wayTablePopupMenu;
+	}
+	
+	public JPopupMenu getMapPopupMenu() {
+		if (mapPopupMenu == null) {
+			mapPopupMenu = new JPopupMenu("Manipulate");
+			mapPopupMenu.add(getEditMenuItem());
+			mapPopupMenu.add(getDeleteMenuItem());
+		}
+		
+		return mapPopupMenu;
+	}
+	
+	private JMenuItem getExportStopsToCSVMenuItem() {
+		if (exportStopsToCSVMenuItem == null) {
+			exportStopsToCSVMenuItem = new JMenuItem("Export Stops To CSV");
+			Image img;
+			try {
+				img = ImageIO.read(new FileInputStream("resources/images/exportIcon.png"));
+				exportStopsToCSVMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return exportStopsToCSVMenuItem;
+	}
+	
+	private JMenuItem getExportWaysToCSVMenuItem() {
+		if (exportWaysToCSVMenuItem == null) {
+			exportWaysToCSVMenuItem = new JMenuItem("Export Ways To CSV");
+			Image img;
+			try {
+				img = ImageIO.read(new FileInputStream("resources/images/exportIcon.png"));
+				exportWaysToCSVMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return exportWaysToCSVMenuItem;
+	}
+	
+	private JMenuItem getEditMenuItem() {
+		if (editMenuItem == null) {
+			editMenuItem = new JMenuItem("Edit");
+			Image img;
+			try {
+				img = ImageIO.read(new FileInputStream("resources/images/editIcon.png"));
+				editMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return editMenuItem;
+	}
+	
+	private JMenuItem getDeleteMenuItem() {
+		if (deleteMenuItem == null) {
+			deleteMenuItem = new JMenuItem("Delete");
+			Image img;
+			try {
+				img = ImageIO.read(new FileInputStream("resources/images/removeIcon.png"));
+				deleteMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return deleteMenuItem;
+	}
+	
+	private JMenuItem getDeleteFromStopTableMenuItem() {
+		if (deleteFromStopTableMenuItem == null) {
+			deleteFromStopTableMenuItem = new JMenuItem("Delete Selected");
+			Image img;
+			try {
+				img = ImageIO.read(new FileInputStream("resources/images/removeIcon.png"));
+				deleteFromStopTableMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return deleteFromStopTableMenuItem;
+	}
+	
+	private JMenuItem getDeleteFromWayTableMenuItem() {
+		if (deleteFromWayTableMenuItem == null) {
+			deleteFromWayTableMenuItem = new JMenuItem("Delete Selected");
+			Image img;
+			try {
+				img = ImageIO.read(new FileInputStream("resources/images/removeIcon.png"));
+				deleteFromWayTableMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return deleteFromWayTableMenuItem;
 	}
 
 	private JButton getLoadBtn() {
@@ -578,21 +826,28 @@ public class TariffZonesView extends JFrame {
 	public JLabel getInfoLabel() {
 		if (infoLabel == null) {
 			infoLabel = new JLabel(DEFAULT_INFO_MSG);
+			infoLabel.setBackground(Color.LIGHT_GRAY);
+			infoLabel.setHorizontalTextPosition(JLabel.CENTER);
 		}
 		return infoLabel;
-	}
-	
-	public JLabel getLatLonLabel() {
-		if (latLonLabel == null) {
-			latLonLabel = new JLabel("");
-			latLonLabel.setHorizontalAlignment(JLabel.RIGHT);
-		}
-		return latLonLabel;
 	}
 	
 	public JTable getStopTable() {
 		if (stopTable == null) {
 			stopTable = new JTable();
+			stopTable.setAutoCreateRowSorter(true);
+			
+//			RowSorter sorter = new TableRowSorter();
+//			stopTable.setRowSorter(sorter);
+//			//TODO:
+//			RowFilter rf = null;
+//		    //If current expression doesn't parse, don't update.
+//		    try {
+//		        rf = RowFilter.regexFilter("Roman", 0);
+//		    } catch (java.util.regex.PatternSyntaxException e) {
+//		        e.printStackTrace();
+//		    }
+//		    ((DefaultRowSorter) sorter).setRowFilter(rf);
 		}
 		return stopTable;
 	}
@@ -600,6 +855,7 @@ public class TariffZonesView extends JFrame {
 	public JTable getWayTable() {
 		if (wayTable == null) {
 			wayTable = new JTable();
+			wayTable.setAutoCreateRowSorter(true);
 		}
 		return wayTable;
 	}

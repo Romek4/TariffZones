@@ -51,7 +51,7 @@ public class Djikstra {
         Node endNode = graph.getNodes().get(endNodeIndex);
         
         int index = startNodeIndex;
-        while ( !helpNode.getKey().equals(endNode.getKey()) )
+        while ( !helpNode.getKey().equals(endNode.getKey()))
         {
             aDef[index] = true;
             
@@ -67,7 +67,7 @@ public class Djikstra {
                         aX[j] = index;
                     }
                 } 
-                else if ( helpNode.getKey().equals(edge.getEndNode().getKey()) )
+                else if ( helpNode.getKey().equals(edge.getEndNode().getKey()))
                 {
                     int j = graph.getNodes().indexOf(edge.getStartNode());
                     if ( aT[j] > aT[index] + edge.getPrice() && !aDef[j])

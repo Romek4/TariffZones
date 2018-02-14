@@ -86,6 +86,17 @@ public class SQLProcessor {
 		}
 	}
 	
+	public void update(String sqlStatement, Object[] values) {
+		try {
+			preparedStatement = (PreparedStatement) connection.prepareStatement(sqlStatement);
+			buildStatement(preparedStatement, values);
+			preparedStatement.executeUpdate();
+		} catch (SQLException e) {
+			System.err.println("Update error: " + e);
+			e.printStackTrace();
+		}
+	}
+	
 	public ResultSet getResultSet() {
 		return this.resultSet;
 	}

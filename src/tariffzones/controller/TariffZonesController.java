@@ -1,115 +1,172 @@
 package tariffzones.controller;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.GridBagLayout;
+import java.awt.Image;
+import java.awt.Point;
+import java.awt.geom.Point2D;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.LinkedList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
+import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.JComboBox;
+import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
+import javax.swing.JToolTip;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
-import org.openstreetmap.gui.jmapviewer.Coordinate;
-import org.openstreetmap.gui.jmapviewer.JMapViewer;
-import org.openstreetmap.gui.jmapviewer.MapMarkerDot;
-import org.openstreetmap.gui.jmapviewer.MapPolygonImpl;
-import org.openstreetmap.gui.jmapviewer.interfaces.MapMarker;
+import org.jxmapviewer.JXMapViewer;
+import org.jxmapviewer.OSMTileFactoryInfo;
+import org.jxmapviewer.painter.AbstractPainter;
+import org.jxmapviewer.painter.CompoundPainter;
+import org.jxmapviewer.painter.Painter;
+import org.jxmapviewer.viewer.GeoPosition;
+import org.jxmapviewer.viewer.TileFactory;
+import org.jxmapviewer.viewer.TileFactoryInfo;
+import org.jxmapviewer.viewer.WaypointPainter;
 
-import tariffzones.gui.AddBusStopDlg;
+import tariffzones.gui.AddStopDlg;
+import tariffzones.gui.AddWayDlg;
 import tariffzones.gui.AddNetworkDlg;
+import tariffzones.gui.ColorZoneChooserPl;
+import tariffzones.gui.ComboBoxRenderer;
+import tariffzones.gui.OpenNetworkFromFilesDlg;
+import tariffzones.gui.StopInfoPanel;
 import tariffzones.gui.TariffZonesView;
-import tariffzones.model.BusStop;
-import tariffzones.model.MyCoordinate;
-import tariffzones.model.TableModel;
-
+import tariffzones.map.DefaultTileFactory;
+import tariffzones.map.LandscapeTileFactoryInfo;
+import tariffzones.map.ImageTextComboBoxItem;
+import tariffzones.map.MapViewer;
+import tariffzones.map.MapnikGrayScaleTileFactoryInfo;
+import tariffzones.map.MapnikNoLabelsTileFactoryInfo;
+import tariffzones.map.TileFactoryManager;
+import tariffzones.map.TransportTileFactoryInfo;
+import tariffzones.map.mapComponents.StopWaypointRenderer;
+import tariffzones.map.mapComponents.WayPainter;
+import tariffzones.model.Stop;
+import tariffzones.model.StopTableModel;
+import tariffzones.model.Network;
+import tariffzones.model.ResultSetTableModel;
+import tariffzones.model.State;
 import tariffzones.model.TariffZonesModel;
 import tariffzones.model.Way;
-import tariffzones.tariffzonesprocessor.greedy.GreedyAlgorithm;
+import tariffzones.model.WayTableModel;
+import tariffzones.tariffzonesprocessor.greedy.TariffZonesProblemSolver;
 import tariffzones.tariffzonesprocessor.greedy.Zone;
 
 public class TariffZonesController {
 	private TariffZonesModel model;
 	private TariffZonesView view;
-	private String loadedNetworkName, loadedNetworkType; 
+	private PainterManager painterManager;
+	private TileFactoryManager tileFactoryManager;
+	private Network loadedNetwork;
+	private Stop lastPickedStop;
 
+	private final String IC_NETWORK_TYPE = "IC";
+	private final String OC_NETWORK_TYPE = "OC";
 		
 	public TariffZonesController() {
 		model = new TariffZonesModel();
 	}
 	
 	public void activate() {
-		view.unregistryListeners();
-		List networkNames = getNetworkNames();
+
+		List<TileFactory> tileFactories = new ArrayList<>(5);
+		DefaultTileFactory osmTileFactory = new DefaultTileFactory(new OSMTileFactoryInfo());
+		DefaultTileFactory mapnikNoLabelsTileFactory = new DefaultTileFactory(new MapnikNoLabelsTileFactoryInfo());
+		DefaultTileFactory mapnikGrayScaleTileFactory = new DefaultTileFactory(new MapnikGrayScaleTileFactoryInfo());
+		DefaultTileFactory transportTileFactory = new DefaultTileFactory(new TransportTileFactoryInfo());
+		DefaultTileFactory humanitarianTileFactory = new DefaultTileFactory(new LandscapeTileFactoryInfo());
 		
-		if (networkNames != null) {
-			view.getCitiesCb().setModel((new DefaultComboBoxModel(networkNames.toArray())));
+		tileFactories.add(osmTileFactory);
+		tileFactories.add(mapnikNoLabelsTileFactory);
+		tileFactories.add(mapnikGrayScaleTileFactory);
+		tileFactories.add(transportTileFactory);
+		tileFactories.add(humanitarianTileFactory);
+		
+		painterManager = new PainterManager(view.getMapViewer());
+		view.getTileServersCb().addItem(osmTileFactory);
+		view.getTileServersCb().addItem(mapnikNoLabelsTileFactory);
+		view.getTileServersCb().addItem(mapnikGrayScaleTileFactory);
+		view.getTileServersCb().addItem(transportTileFactory);
+		view.getTileServersCb().addItem(humanitarianTileFactory);
+		
+		view.unregistryListeners();
+		List networks = model.getNetworks();
+		
+		if (networks != null) {
+			view.getCitiesCb().setModel((new DefaultComboBoxModel(networks.toArray())));
 		}
 		
 		view.registryListeners();
+		
+		updateBtns();
 	}
 	
-	public ArrayList<Zone> solveTariffZonesProblem() {
-		GreedyAlgorithm greedy = new GreedyAlgorithm();
-		greedy.runAlgorithm(model.getStops(), 4);
-		return greedy.getZones();
-	}
-	
-	public void paintZones(ArrayList<Zone> zones) {
-//		for (Zone zone : zones) {
-//			List<Coordinate> coordinates = new ArrayList();
-//			for (BusStop busStop : zone.getStopsInZone()) {
-//				coordinates.add(new Coordinate(busStop.getCoordinate().getLatitude(), busStop.getCoordinate().getLongitude()));
-//			}
-//			
-//			MapPolygonImpl mapPolygon = new MapPolygonImpl(coordinates);//TODO: vykresæovaù inak, nejak˝ radius okolo bodu alebo Ëo
-//			mapPolygon.setColor(Color.CYAN); //TODO: farbenie jednotliv˝ch zÛn - nech si uûÌvateæ zvolÌ poËet zÛn a ich farby
-//			mapViewer.addMapPolygon(mapPolygon);
-//		}
+	public void solveTariffZonesProblem() {
 		
-		Comparator<Coordinate> busStopComparator = (Coordinate c1, Coordinate c2)->Double.compare(c1.getLon(), c2.getLon());
+		ColorZoneChooserPl dlg = new ColorZoneChooserPl();
+		int option = JOptionPane.showConfirmDialog(view.getRootPane(), dlg, "Tariff Zones Problem Solving", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (option == 2) {
+            return;
+        }
+        
+        int numberOfZones = (int) dlg.getNumberOfZonesCb().getSelectedItem();
+        ArrayList<Color> colorList = dlg.getSelectedColors();
+		boolean useOnlyNumberOfHabs = dlg.getUseOnlyNumberOfHabitantsChb().isSelected();
+		boolean useNumberOfHabs = dlg.getUseNumberOfHabitantsChb().isSelected();
+		boolean useTimeLength = dlg.getUseTimeLengthRb().isSelected(); //if false, then dlg.getUseDistanceRb().isSelected() is true
 		
-		List<Coordinate> coordinates = new ArrayList();
-		for (BusStop busStop : zones.get(0).getStopsInZone()) {
-			coordinates.add(new Coordinate(busStop.getCoordinate().getLatitude(), busStop.getCoordinate().getLongitude()));
+		TariffZonesProblemSolver solver = new TariffZonesProblemSolver();
+		if (useOnlyNumberOfHabs) {
+			solver.runGreedyAlgorithm(model.getNetworkStops(), numberOfZones, model.getDistanceMatrix(), useOnlyNumberOfHabs, true);
+		}
+		else {
+			if (useTimeLength) {
+				Way.PRICE_VALUE = Way.TIME;
+			}
+			else {
+				Way.PRICE_VALUE = Way.DISTANCE;
+			}
+			
+			model.runDjikstra();
+			solver.runGreedyAlgorithm(model.getNetworkStops(), numberOfZones, model.getDistanceMatrix(), useOnlyNumberOfHabs, useNumberOfHabs);
+		}
+        
+		ArrayList<Zone> zones = solver.getZones();
+		for (int i = 0; i < zones.size(); i++) {
+			painterManager.addZoneWaypointPainter(zones.get(i).getStopsInZone(), colorList.get(i));
+			zones.get(i).setColor(colorList.get(i));
 		}
 		
-		coordinates.sort(busStopComparator);
-		MapPolygonImpl mapPolygon = new MapPolygonImpl(coordinates);
-		mapPolygon.setColor(Color.CYAN);
-		view.getMapViewer().addMapPolygon(mapPolygon);
-		
-		coordinates = new ArrayList();
-		for (BusStop busStop : zones.get(1).getStopsInZone()) {
-			coordinates.add(new Coordinate(busStop.getCoordinate().getLatitude(), busStop.getCoordinate().getLongitude()));
-		}
-		
-		coordinates.sort(busStopComparator);
-		mapPolygon = new MapPolygonImpl(coordinates);
-		mapPolygon.setColor(Color.GREEN);
-		view.getMapViewer().addMapPolygon(mapPolygon);
-		
-		coordinates = new ArrayList();
-		for (BusStop busStop : zones.get(2).getStopsInZone()) {
-			coordinates.add(new Coordinate(busStop.getCoordinate().getLatitude(), busStop.getCoordinate().getLongitude()));
-		}
-		
-		coordinates.sort(busStopComparator);
-		mapPolygon = new MapPolygonImpl(coordinates);
-		mapPolygon.setColor(Color.RED);
-		view.getMapViewer().addMapPolygon(mapPolygon);
+		painterManager.getPolygonPainter().setPolygons(new HashSet<>(zones));
+		painterManager.repaintPainters();
 	}
 	
 	public void addStopsInNetworkToMap(String networkName) {
+		//reset
+		painterManager = new PainterManager(view.getMapViewer());
+		
+		model.setNetwork((Network) view.getCitiesCb().getSelectedItem());
 		model.resetLists();
-		this.loadedNetworkName = networkName;
-		this.loadedNetworkType = model.getNetworkType(networkName);
 		
 		ResultSet resultSet = model.getStops(networkName);
 		if (resultSet == null) {
@@ -117,44 +174,147 @@ public class TariffZonesController {
 		}
 		
 		try {
-			Coordinate coordinate = null;
 			while (resultSet.next()) {
-				coordinate = new Coordinate(resultSet.getDouble("latitude"), resultSet.getDouble("longitude"));
-				MapMarkerDot mapMarkerDot = new MapMarkerDot(resultSet.getString("stop_name"), coordinate);
-				view.getMapViewer().addMapMarker(mapMarkerDot);
+				int id = resultSet.getInt("stop_id");
+				int stopNumber = resultSet.getInt("stop_number");
+				String stopName = resultSet.getString("stop_name");
+				int numberOfHabitants = resultSet.getInt("num_of_habitants");
+				double latitude = resultSet.getDouble("latitude");
+				double longitude = resultSet.getDouble("longitude");
 				
-				MyCoordinate myCoordinate = new MyCoordinate(resultSet.getDouble("latitude"), resultSet.getDouble("longitude"));
-				model.addStop(resultSet.getInt("stop_number"), resultSet.getString("stop_name"), myCoordinate, resultSet.getInt("num_of_habitants"));
+				model.addStop(id, stopNumber, stopName, numberOfHabitants, latitude, longitude);
 			}
 			
-			if (coordinate != null) {
-				view.getMapViewer().setDisplayPosition(coordinate, 13);
+			if (view.getStopCb().getSelectedItem().toString().equals("Stops")) {
+				fillTableWithStops(view.getStopTable(), model.getNetworkStops());
+			}			
+			if (view.getWayCb().getSelectedItem().toString().equals("Stops")) {
+				fillTableWithStops(view.getWayTable(), model.getNetworkStops());
 			}
 			
-			if (view.getStopCb().getSelectedItem().toString().equals("Bus stops")) {
-				fillTableWithStops(view.getStopTable(), networkName);
-			}
-			else {
-				fillTableWithWays(view.getStopTable(), networkName);
-			}
+			painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
+			painterManager.repaintPainters();
+			updateBtns();
 			
-			if (view.getWayCb().getSelectedItem().toString().equals("Bus stops")) {
-				fillTableWithStops(view.getWayTable(), networkName);
-			}
-			else { 
-				fillTableWithWays(view.getWayTable(), networkName);
-			}
-			
-			addWaysBetweenStopsInCityToMap(networkName);
-			
-			paintZones(solveTariffZonesProblem());
 		} catch (SQLException e) {
-			System.err.println(this.getClass().getName() + " addDotMarkersStops method " + e);
+			System.err.println(this.getClass().getName() + " addStopsInNetworkToMap method " + e);
 			e.printStackTrace();
 		}
 	}
 	
-	public void addNetwork() {
+	public void addBusStop(Point point) {
+		AddStopDlg dlg = new AddStopDlg();
+		Image img;
+		try {
+			img = ImageIO.read(new FileInputStream("resources/images/busStopBtnImg.png"));
+			dlg.setIconLabelImg(img);
+			dlg.setIconLabelText("Add stop");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		int option = JOptionPane.showConfirmDialog(view.getMapViewer(), dlg, "Add Stop", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (option == 2) {
+            return;
+        }
+		
+		int stopNumber = Integer.parseInt(dlg.getStopNumberTf().getText());
+		String stopName = dlg.getStopNameTf().getText();
+		int numberOfCustomers = Integer.parseInt(dlg.getNumberOfCustomersTf().getText());
+		GeoPosition geoPosition = view.getMapViewer().convertPointToGeoPosition(point);
+		
+		model.addAndRememberStop(stopNumber, stopName, numberOfCustomers, geoPosition.getLatitude(), geoPosition.getLongitude());
+		
+		//TODO: reduce complexity and add just last added stop from list to table/s
+		//TODO: maybe create a method for this short code - same logic is used in addWaysBetweenStopsInCityToMap method
+		if (view.getStopCb().getSelectedItem().toString().equals("Stops")) {
+			fillTableWithStops(view.getStopTable(), model.getNetworkStops());
+		}
+		
+		if (view.getWayCb().getSelectedItem().toString().equals("Stops")) {
+			fillTableWithStops(view.getWayTable(), model.getNetworkStops());
+		}
+		
+		painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
+		painterManager.repaintPainters();
+		updateBtns();
+	}
+	
+	public void addWay(Point startPoint, Point endPoint) {
+		Stop startStop = checkMousePositionForStop(startPoint);
+		Stop endStop = checkMousePositionForStop(endPoint);
+		
+		Image img = null;
+		try {
+			img = ImageIO.read(new FileInputStream("resources/images/wayBtnImg.png"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		if (startStop.equals(endStop)) {
+			JOptionPane.showMessageDialog(view.getMapViewer(), "The start and end point could not be same!", "Add Way", JOptionPane.ERROR_MESSAGE, new ImageIcon(img.getScaledInstance(32, 32, Image.SCALE_SMOOTH)));
+			return;
+		}
+		
+		AddWayDlg dlg = new AddWayDlg();
+		dlg.setIconLabelImg(img);
+		dlg.setIconLabelText("Add way");
+		
+		int option = JOptionPane.showConfirmDialog(view.getMapViewer(), dlg, "Add Way", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (option == 2) {
+            return;
+        }
+		
+		double wayLength = Double.parseDouble(dlg.getWayLengthTf().getText());
+		double wayTimeLength = Double.parseDouble(dlg.getWayTimeLengthTf().getText());
+		
+		model.addAndRememberWay(startStop, endStop, wayLength, wayTimeLength);
+		
+		//TODO: reduce complexity and add just last added stop from list to table/s
+		//TODO: maybe create a method for this short code - same logic is used in addWaysBetweenStopsInCityToMap method
+		if (view.getStopCb().getSelectedItem().toString().equals("Ways")) {
+			fillTableWithWays(view.getStopTable(), model.getNetworkWays());
+		}
+		
+		if (view.getWayCb().getSelectedItem().toString().equals("Ways")) {
+			fillTableWithWays(view.getWayTable(), model.getNetworkWays());
+		}
+		
+		painterManager.getWayPainter().setWays(new HashSet<>(model.getNetworkWays()));
+		painterManager.repaintPainters();
+		updateBtns();
+	}
+	
+	public void addWaysBetweenStopsInCityToMap(String networkName) {
+		ResultSet resultSet = model.getWays(networkName);
+		if (resultSet == null) {
+			return;
+		}
+		
+		try {
+			while (resultSet.next()) {
+//				GeoPosition coordinate1 = new GeoPosition(resultSet.getDouble("start_lat"), resultSet.getDouble("start_lon"));
+//				GeoPosition coordinate2 = new GeoPosition(resultSet.getDouble("end_lat"), resultSet.getDouble("end_lon"));
+				
+				model.addWay(resultSet.getInt("start_number"), resultSet.getInt("end_number"), resultSet.getDouble("km_length"), resultSet.getDouble("time_length"));
+			}
+			
+			if (view.getStopCb().getSelectedItem().toString().equals("Ways")) {
+				fillTableWithWays(view.getStopTable(), model.getNetworkWays());
+			}
+			
+			if (view.getWayCb().getSelectedItem().toString().equals("Ways")) {
+				fillTableWithWays(view.getWayTable(), model.getNetworkWays());
+			}
+			
+			painterManager.getWayPainter().setWays(new HashSet<>(model.getNetworkWays()));
+		} catch (SQLException e) {
+			System.err.println(this.getClass().getName() + " addWaysBetweenStopsInCityToMap method " + e);
+			e.printStackTrace();
+		}
+	}
+	
+	public void addNetwork() throws IOException, FileNotFoundException {
 		AddNetworkDlg dlg = new AddNetworkDlg(getNetworkTypes(), getCountryIds());
 		
 		int option = JOptionPane.showConfirmDialog(view.getRootPane(), dlg, "Add network", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
@@ -172,129 +332,269 @@ public class TariffZonesController {
 		String wayFilePath = dlg.getWayFileLb().getText();
 		boolean dbImport = dlg.getDBImportChb().isSelected();
 		
-		ArrayList<BusStop> stops = null;
+		ArrayList<Stop> stops = null;
 		ArrayList<Way> ways = null;
+			
+		stops = model.readStops(stopsFilePath);
+		ways = model.readWays(wayFilePath, stops);
+		
+//		if (dbImport) {
+//			model.insertNetwork(networkName, networkType, countryId);
+//			view.getCitiesCb().addItem(networkName);
+//			int networkId = model.getNetworkId(networkName);
+//			
+//			if (networkId < 0) {
+//				return;
+//			}
+//			
+//			if (stops != null) {
+//				model.insertStops(networkId, countryId, stops);
+//			}
+//			
+//			if (ways != null) {
+//				model.insertEdges(ways);
+//			}
+//		}
+//		else {
+//			if (stops != null) {
+//				fillTableWithStops(view.getStopTable(), stops);
+//			}
+//			//TODO: table change
+//			if (ways != null) {
+//				fillTableWithWays(view.getWayTable(), ways);
+//			}
+//		}
+	}
+	
+	public void openNetworkFromFiles() throws IOException, FileNotFoundException {
+		OpenNetworkFromFilesDlg dlg = new OpenNetworkFromFilesDlg();
+		Image img;
 		try {
-			stops = model.readBusStops(stopsFilePath, ',');
-			ways = model.readWays(wayFilePath, ',');
-		} catch (FileNotFoundException e) {
+			img = ImageIO.read(new FileInputStream("resources/images/networkIcon.png"));
+			dlg.setIconLabelImg(img);
+			dlg.setIconLabelText("Open network from files");
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		
-		if (dbImport) {
-			model.insertNetwork(networkName, networkType, countryId);
-			view.getCitiesCb().addItem(networkName);
-			int networkId = model.getNetworkId(networkName);
-			
-			if (networkId < 0) {
-				return;
-			}
-			
-			if (stops != null) {
-				model.insertStops(networkId, countryId, stops);
-			}
-			
-			if (ways != null) {
-				model.insertEdges(ways);
-			}
+		int option = JOptionPane.showConfirmDialog(view.getRootPane(), dlg, "Open network", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (option == 2) {
+            return;
+        }
+		String stopsFilePath = dlg.getStopsFileLb().getText();
+		String wayFilePath = dlg.getWayFileLb().getText();
+		
+		ArrayList<Stop> stops = null;
+		ArrayList<Way> ways = null;
+		
+		stops = model.readStops(stopsFilePath);
+		ways = model.readWays(wayFilePath, stops);
+		
+		//dummy network
+		model.setNetwork(new Network(0, "", "", ""));
+		model.getNetwork().setStops(stops);
+		model.getNetwork().setWays(ways);
+		
+		//FIXME: duplicity?
+		if (view.getStopCb().getSelectedItem().toString().equals("Stops")) {
+			fillTableWithStops(view.getStopTable(), model.getNetworkStops());
 		}
-		else {
-			if (stops != null) {
-				fillTableWithStops(view.getStopTable(), stops);
-			}
-			//TODO: table change
-			if (ways != null) {
-				fillTableWithWays(view.getWayTable(), ways);
-			}
+		
+		if (view.getWayCb().getSelectedItem().toString().equals("Stops")) {
+			fillTableWithStops(view.getWayTable(), model.getNetworkStops());
 		}
+		
+		if (view.getStopCb().getSelectedItem().toString().equals("Ways")) {
+			fillTableWithWays(view.getStopTable(), model.getNetworkWays());
+		}
+		
+		if (view.getWayCb().getSelectedItem().toString().equals("Ways")) {
+			fillTableWithWays(view.getWayTable(), model.getNetworkWays());
+		}
+	
+		model.setUnsavedStops(model.getNetworkStops());
+		model.setUnsavedWays(model.getNetworkWays());
+		
+		painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
+		painterManager.getWayPainter().setWays(new HashSet<>(model.getNetworkWays()));
+		painterManager.repaintPainters();
+	}
+
+	public void deleteWays(ArrayList<Way> ways) {
+		for (Way way : ways) {
+			model.removeAndRememberWay(way);
+		}
+		
+		//FIXME: redundant code
+		if (view.getStopCb().getSelectedItem().toString().equals("Ways")) {
+			fillTableWithWays(view.getStopTable(), model.getNetworkWays());
+		}
+		
+		if (view.getWayCb().getSelectedItem().toString().equals("Ways")) {
+			fillTableWithWays(view.getWayTable(), model.getNetworkWays());
+		}
+		
+		painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
+		painterManager.repaintPainters();
+		updateBtns();
+	}
+
+	public void deleteStops(ArrayList<Stop> stops) {
+		for (Stop stop : stops) {
+			model.removeAndRememberStop(stop);
+		}
+		
+		//FIXME: redundant code
+		if (view.getStopCb().getSelectedItem().toString().equals("Stops")) {
+			fillTableWithStops(view.getStopTable(), model.getNetworkStops());
+		}
+		
+		if (view.getWayCb().getSelectedItem().toString().equals("Stops")) {
+			fillTableWithStops(view.getWayTable(), model.getNetworkStops());
+		}
+		
+		painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
+		painterManager.repaintPainters();
+		updateBtns();
+	}
+	
+	public void deleteStop(Stop stop) {
+//		int networkId = model.getNetworkId(networkName);
+//		String countryId = model.getNetworkCountryId(networkName);
+//		System.out.println("deleting " + networkId + ", " + countryId + ", " + stopNumber);
+		
+		model.removeAndRememberStop(stop);
+		
+		//FIXME: redundant code
+		if (view.getStopCb().getSelectedItem().toString().equals("Stops")) {
+			fillTableWithStops(view.getStopTable(), model.getNetworkStops());
+		}
+		
+		if (view.getWayCb().getSelectedItem().toString().equals("Stops")) {
+			fillTableWithStops(view.getWayTable(), model.getNetworkStops());
+		}
+		
+		painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
+		painterManager.repaintPainters();
+		updateBtns();
+	}
+	
+	public void editStop(Stop stop) {
+		AddStopDlg dlg = new AddStopDlg();
+		Image img;
+		try {
+			img = ImageIO.read(new FileInputStream("resources/images/editIcon.png"));
+			dlg.setIconLabelImg(img);
+			dlg.setIconLabelText("Edit stop");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		dlg.getStopNumberTf().setText(String.valueOf(stop.getNumber()));
+		dlg.getStopNameTf().setText(stop.getName());
+		dlg.getNumberOfCustomersTf().setText(String.valueOf(stop.getNumberOfCustomers()));
+		
+		int option = JOptionPane.showConfirmDialog(view.getRootPane(), dlg, "Edit Stop", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (option == 2) {
+            return;
+        }
+		
+		stop.setNumber(Integer.parseInt(dlg.getStopNumberTf().getText()));
+		stop.setName(dlg.getStopNameTf().getText());
+		stop.setNumberOfCustomers(Integer.parseInt(dlg.getNumberOfCustomersTf().getText()));
+		
+		if (stop.getState() == State.ADDED) {
+			return;
+		}
+		
+		stop.setState(State.MODIFIED);
+		model.getUnsavedStops().add(stop);
+		
+		//TODO: reduce complexity nad add just last added stop from list to table/s
+		//TODO: maybe create a methoc for this short code - same logic is used in addWaysBetweenStopsInCityToMap method
+//		if (view.getStopCb().getSelectedItem().toString().equals("Stops")) {
+//			fillTableWithStops(view.getStopTable(), model.getNetworkStops());
+//		}
+//		
+//		if (view.getWayCb().getSelectedItem().toString().equals("Stops")) {
+//			fillTableWithStops(view.getWayTable(), model.getNetworkStops());
+//		}
+//		
+//		painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
+//		painterManager.repaintPainters();
+		
 	}
 	
 	public void deleteNetwork(String networkName) {
 		model.deleteNetwork(networkName);
 	}
 	
-	public void addBusStop(int x, int y) {
-		double lat = view.getMapViewer().getPosition(x ,y).getLat();
-		double lon = view.getMapViewer().getPosition(x, y).getLon();
-		
-		
-		AddBusStopDlg dlg = new AddBusStopDlg();
-		
-		int option = JOptionPane.showConfirmDialog(view.getRootPane(), dlg, "Add bus stop", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (option == 2) {
-            return;
-        }
-		
-		int stopNumber = Integer.parseInt(dlg.getStopNumberTf().getText());
-		String stopName = dlg.getStopNameTf().getText();
-		int numberOfCustomers = Integer.parseInt(dlg.getNumberOfCustomersTf().getText());
-		
-		addBusStop(view.getCitiesCb().getSelectedItem().toString(), stopNumber, stopName, lat, lon, numberOfCustomers);
-		view.getMapViewer().addMapMarker(new MapMarkerDot(stopName, new MyCoordinate(lat, lon)));
-		
+	public boolean saveChangesToDatabase() {
+		return model.saveChangesToDatabase();
 	}
 	
-	public void fillTableWithStops(JTable table, String cityName) {
-		ResultSet resultSet = model.getStopNumAndName(cityName);
-		if (resultSet == null) {
-			return;
-		}
-		
-		TableModel tableModel = new TableModel();
-		tableModel.setResultSet(resultSet);
-		table.setModel(tableModel);
+	public void fillTableWithStops(JTable table) {
+		fillTableWithStops(table, model.getNetworkStops());
+//		ResultSet resultSet = model.getStopNumAndName(cityName);
+//		if (resultSet == null) {
+//			return;
+//		}
+//		
+//		ResultSetTableModel tableModel = new ResultSetTableModel();
+//		tableModel.setResultSet(resultSet);
+//		table.setModel(tableModel);
 	}
 	
-	public void fillTableWithWays(JTable table, String networkName) {
-		ResultSet resultSet = model.getWaysWithStopNames(networkName);
-		if (resultSet == null) {
-			return;
-		}
-		
-		TableModel tableModel = new TableModel();
-		tableModel.setResultSet(resultSet);
-		table.setModel(tableModel);
+	public void fillTableWithWays(JTable table) {
+		fillTableWithWays(table, model.getNetworkWays());
+//		ResultSet resultSet = model.getWaysWithStopNames(networkName);
+//		if (resultSet == null) {
+//			return;
+//		}
+//		
+//		ResultSetTableModel tableModel = new ResultSetTableModel();
+//		tableModel.setResultSet(resultSet);
+//		table.setModel(tableModel);
 	}
 	
-	public void fillTableWithStops(JTable table, ArrayList list) {
-		String col[] = {"stop_number","stop_name"};
-		DefaultTableModel tableModel = new DefaultTableModel(col, list.size());
-		for (Object o : list.toArray()) {
-			BusStop stop = (BusStop) o;
-			tableModel.addRow(new Object[]{ stop.getNumber(), stop.getName()});
-		}
-		table.setModel(tableModel);
-	}
-	
-	public void fillTableWithWays(JTable table, ArrayList list) {
-		//TODO: mins/ km?
-		String col[] = {"stop_name","stop_name", "time_length"};
-		DefaultTableModel tableModel = new DefaultTableModel(col, list.size());
-		for (Object o : list.toArray()) {
-			Way way = (Way) o;
-			tableModel.addRow(new Object[]{ way.getStartPoint().getNumber(), way.getEndPoint().getNumber(), way.getMins()});
-		}
-		table.setModel(tableModel);
-	}
-	
-	public void addWaysBetweenStopsInCityToMap(String networkName) {
-		ResultSet resultSet = model.getWays(networkName);
-		if (resultSet == null) {
-			return;
-		}
-		
-		try {
-			while (resultSet.next()) {
-				Coordinate coordinate1 = new Coordinate(resultSet.getDouble("start_lat"), resultSet.getDouble("start_lon"));
-				Coordinate coordinate2 = new Coordinate(resultSet.getDouble("end_lat"), resultSet.getDouble("end_lon"));
-				view.getMapViewer().addMapPolygon(new MapPolygonImpl(Arrays.asList(coordinate1, coordinate2, coordinate2)));
-				
-				model.addWay(resultSet.getInt("start_number"), resultSet.getInt("end_number"), resultSet.getDouble("km_length"), resultSet.getDouble("time_length"));
+	public void fillTableWithStops(JTable table, ArrayList<Stop> list) {
+		StopTableModel stopTableModel = new StopTableModel(list);
+		table.setModel(stopTableModel);
+		table.getModel().addTableModelListener(new TableModelListener() {
+			
+			@Override
+			public void tableChanged(TableModelEvent e) {
+				if (e.getType() == TableModelEvent.UPDATE) {
+					Stop stop = (Stop) list.get(e.getFirstRow());
+					if (stop != null) {
+						stop.setState(State.MODIFIED);
+						model.getUnsavedStops().add(stop);
+					}
+				}
 			}
-		} catch (SQLException e) {
-			System.err.println(this.getClass().getName() + " addWaysBetweenStopsInCityToMap method " + e);
-			e.printStackTrace();
-		}
+		});
+//		for (Object o : list.toArray()) {
+//			Stop stop = (Stop) o;
+//			tableModel.addRow(new Object[]{ stop.getNumber(), stop.getName()});
+//		}
+	}
+	
+	public void fillTableWithWays(JTable table, ArrayList<Way> list) {
+		//TODO: mins/ km?
+		WayTableModel wayTableModel = new WayTableModel(list);
+		table.setModel(wayTableModel);
+		table.getModel().addTableModelListener(new TableModelListener() {
+			
+			@Override
+			public void tableChanged(TableModelEvent e) {
+				if (e.getType() == TableModelEvent.UPDATE) {
+					Way way = (Way) list.get(e.getFirstRow());
+					if (way != null) {
+						way.setState(State.MODIFIED);
+						model.getUnsavedWays().add(way);
+					}
+				}
+			}
+		});
 	}
 	
 //	public void addDotMarkersFromTree(JList list) {
@@ -371,94 +671,138 @@ public class TariffZonesController {
 		
 		return countryIds;
 	}
-	
-//	public void addDotMarkersFromTree(JMapViewer jMapViewer) {
-//        Node actual = model.getStops().getRoot();
-//        Stack stack = new Stack();
-//        
-//        while(!stack.isEmpty() || actual != null)
-//        {
-//            if (actual != null) {
-//                stack.push(actual);
-//                actual = actual.getLeftChild();
-//            }
-//            else {
-//                Node node = (Node) stack.pop();
-//                
-//                BusStop busStop = (BusStop) node.getRecord().getValue();
-//                MapMarkerDot mapMarkerDot = new MapMarkerDot(busStop.getName(), new org.openstreetmap.gui.jmapviewer.Coordinate(busStop.getCoordinate().getLatitude(), busStop.getCoordinate().getLongitude()));
-//                jMapViewer.addMapMarker(mapMarkerDot);
-//                
-//                actual = node.getRightChild();
-//            }
-//        }
-//	}
-	
-	public void addBusStop(String networkName, int stopNumber, String stopName, double latitude, double longitude, int numOfHabitants) {
-		int networkId = model.getNetworkId(networkName);
-		String countryId = model.getNetworkCountryId(networkName);
+
+	public void checkForStopAndShowTooltip(Point point) {
+		Stop stop = checkMousePositionForStop(point);
+		JToolTip mapToolTip = ((MapViewer) view.getMapViewer()).getToolTip();
 		
-		model.insertStop(networkId, countryId, stopNumber, stopName, new MyCoordinate(latitude, longitude), numOfHabitants);
+		if (stop == null) {
+			mapToolTip.setVisible(false);
+			return;
+		}
 		
-//		if (model.insertStop(networkId, country_id, stopNumber, stopName, new MyCoordinate(latitude, longitude), numOfHabitants)) {
-//			return false;
-//		}
-//		return true;
+		((MapViewer) view.getMapViewer()).setLayout(null);
+		String s = stop.toString();
+		mapToolTip.setTipText(s);
+		mapToolTip.setBounds((int)point.getX()+8, (int)point.getY()+8, s.length()*8, 20);
+		mapToolTip.setVisible(true);
 	}
-	
-	public void deleteBusStop(String networkName, int stopNumber) {
-		int networkId = model.getNetworkId(networkName);
-		String countryId = model.getNetworkCountryId(networkName);
+
+	public void checkForStopAndShowPopup(Point point) {
+		Stop stop = checkMousePositionForStop(point);
+		if (stop == null) {
+			return;
+		}
 		
-//		System.out.println("deleting " + networkId + ", " + countryId + ", " + stopNumber);
-		model.deleteStop(networkId, countryId, stopNumber);
+		lastPickedStop = stop; //remember right clicked stop for possible delete or edit(to avoid it's finding again) 
+		view.getMapPopupMenu().show(view.getMapViewer(), (int) point.getX(), (int) point.getY());
 	}
 	
-	public String getLoadedNetworkName() {
-		return this.loadedNetworkName;
+	public Stop checkMousePositionForStop(Point point) {
+		if (model.getNetwork().getStops() == null) {
+			return null;
+		}
+		
+		for (Stop stop : model.getNetwork().getStops())
+		{
+			Point2D p = view.getMapViewer().convertGeoPositionToPoint(stop.getPosition());
+			if (point.distance(p) <= 5) { //TODO: make a constant or something
+				return stop;
+			}
+		}
+		
+		return null;
 	}
 	
-	public String getLoadedNetworkType() {
-		return this.loadedNetworkType;
+	public void updateBtns() {
+		if (model.getNetwork() == null) {
+			view.getMapToolboxPl().enableBtns(false);
+		}
+		else {
+			view.getMapToolboxPl().enableBtns(true);
+			view.getMapToolboxPl().getSaveBtn().setEnabled(false);
+		}
+		
+		if (isUnsavedChanges()) {
+			view.getMapToolboxPl().getSaveBtn().setEnabled(true);
+		}
+		else {
+			view.getMapToolboxPl().getSaveBtn().setEnabled(false);
+		}
 	}
-	
-	public void setLoadedNetworkName(String networkName) {
-		this.loadedNetworkName = networkName;
-	}
-	
-	public void setLoadedNetworkType(String networkType) {
-		this.loadedNetworkType = networkType;
+
+	public boolean isUnsavedChanges() {
+		if (model.getUnsavedStops().isEmpty() && model.getUnsavedWays().isEmpty()) {
+			return false;
+		}
+		return true;
 	}
 
 	public void setView(TariffZonesView tariffZonesView) {
 		this.view = tariffZonesView;
 	}
 
-	private void dehighligthAllMarkerDots() {
-		for (MapMarker dot : view.getMapViewer().getMapMarkerList()) {
-			((MapMarkerDot) dot).setStyle(MapMarkerDot.getDefaultStyle());
+	public String getLoadedNetworkName() {
+		if (model.getNetwork() != null) {
+			return model.getNetwork().getNetworkName();
 		}
+		return null;
+	}
+
+	public Stop getLastPickedStop() {
+		return lastPickedStop;
 	}
 	
-	public void highligthBusStop(ArrayList<Integer> stopNumbers) {
-//		int stopNumber = (int) object;
-		dehighligthAllMarkerDots();
-		if (stopNumbers == null) {
+	public void resetLastPickedStopNumber() {
+		lastPickedStop = null;
+	}
+
+	public void exportStops() {
+		if (model.getNetworkStops() == null || model.getNetworkStops().isEmpty()) {
+			JOptionPane.showMessageDialog(view, "Nothing to export", "Export To CSV", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 		
-		BusStop busStop = null;
-		for (int stopNumber : stopNumbers) {
-			busStop = model.findStop(stopNumber);
-			if (busStop != null) {
-				for (MapMarker dot : view.getMapViewer().getMapMarkerList()) {
-					
-					if (dot.getName().equals(busStop.getName())) {
-							((MapMarkerDot) dot).setBackColor(Color.RED);
-							break;
-					}
-				}
+		File file = selectFile();
+		if (file != null) {
+			try {
+				model.getDataImporter().writeStops((ArrayList<Stop>)model.getNetworkStops(), file.getAbsolutePath());
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
+	}
+	
+	public void exportWays() {
+		if (model.getNetworkWays() == null || model.getNetworkWays().isEmpty()) {
+			JOptionPane.showMessageDialog(view, "Nothing to export", "Export To CSV", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+		
+		File file = selectFile();
+		if (file != null) {
+			try {
+				model.getDataImporter().writeWays((ArrayList<Way>)model.getNetworkWays(), file.getAbsolutePath());
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	private File selectFile() {
+		JFileChooser fileChooser = new JFileChooser();
+		int returnVal = fileChooser.showOpenDialog(view.getParent());
+		
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			File file = fileChooser.getSelectedFile();
+			if (file != null) {
+				return file;
+			}
+		}
+		return null;
+	}
+	
+	public TileFactoryManager getTileFactoryManager() {
+		return tileFactoryManager;
 	}
 }
