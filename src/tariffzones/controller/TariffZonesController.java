@@ -192,6 +192,11 @@ public class TariffZonesController {
 				fillTableWithStops(view.getWayTable(), model.getNetworkStops());
 			}
 			
+			if (model.getNetworkStops() != null || !model.getNetworkStops().isEmpty()) {
+				view.getMapViewer().setAddressLocation(((ArrayList<Stop>)model.getNetworkStops()).get(0).getPosition());
+				view.getMapViewer().setZoom(9);
+			}
+			
 			painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
 			painterManager.repaintPainters();
 			updateBtns();
@@ -804,5 +809,23 @@ public class TariffZonesController {
 	
 	public TileFactoryManager getTileFactoryManager() {
 		return tileFactoryManager;
+	}
+
+	public void highligthStops(ArrayList<Stop> stops, Color red) {
+		if (stops == null || stops.isEmpty()) {
+			return;
+		}
+		view.getMapViewer().setAddressLocation(stops.get(0).getPosition());
+		painterManager.getSelectedWaypointPainter().setWaypoints(new HashSet<>(stops));
+		painterManager.repaintPainters();
+	}
+
+	public void highligthWays(ArrayList<Way> ways, Color red) {
+		if (ways == null || ways.isEmpty()) {
+			return;
+		}
+		view.getMapViewer().setAddressLocation(ways.get(0).getStartPosition());
+		painterManager.getSelectedWayPainter().setWays(new HashSet<>(ways));
+		painterManager.repaintPainters();
 	}
 }

@@ -8,18 +8,23 @@ import java.util.List;
 import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.painter.CompoundPainter;
 import org.jxmapviewer.painter.Painter;
+import org.jxmapviewer.viewer.DefaultWaypointRenderer;
 import org.jxmapviewer.viewer.WaypointPainter;
 
 import tariffzones.map.mapComponents.DefaultPolygonRenderer;
+import tariffzones.map.mapComponents.DefaultWayRenderer;
 import tariffzones.map.mapComponents.PolygonPainter;
 import tariffzones.map.mapComponents.StopWaypointRenderer;
 import tariffzones.map.mapComponents.Way;
 import tariffzones.map.mapComponents.WayPainter;
+import tariffzones.model.Network;
 import tariffzones.model.Stop;
 import tariffzones.tariffzonesprocessor.greedy.Zone;
 
 public class PainterManager {
 	private JXMapViewer map;
+	private WaypointPainter<Stop> selectedWaypointPainter;
+	private WayPainter<Way> selectedWayPainter;
 	private WaypointPainter<Stop> waypointPainter;
 	private List<WaypointPainter<Stop>> zoneWaypointPainters;
 	private WayPainter<Way> wayPainter;
@@ -33,14 +38,26 @@ public class PainterManager {
 		waypointPainter = new WaypointPainter<>();
 		waypointPainter.setRenderer(new StopWaypointRenderer(Color.YELLOW));
 		
+		selectedWaypointPainter = new WaypointPainter<>();
+		StopWaypointRenderer stopWaypointRenderer = new StopWaypointRenderer(Color.RED);
+		stopWaypointRenderer.setEllipseDiameter(20);
+		selectedWaypointPainter.setRenderer(stopWaypointRenderer);
+		
 		wayPainter = new WayPainter<>();
+		
+		DefaultWayRenderer waypointRenderer = new DefaultWayRenderer(Color.RED);
+		waypointRenderer.setLineStroke(3);
+		selectedWayPainter = new WayPainter<>();
+		selectedWayPainter.setWayRenderer(waypointRenderer);
 		
 		polygonPainter = new PolygonPainter<>();
 		polygonPainter.setPolygonRenderer(new DefaultPolygonRenderer());
 		
 		painters = new ArrayList<Painter<JXMapViewer>>();
+		painters.add(selectedWaypointPainter);
 		painters.add(waypointPainter);
 		painters.add(wayPainter);
+		painters.add(selectedWayPainter);
 		painters.add(polygonPainter);
 		compoundPainter = new CompoundPainter<>((List<? extends Painter<Painter<JXMapViewer>>>) painters);
 	}
@@ -61,8 +78,9 @@ public class PainterManager {
 	public void repaintPainters() {
 		if (map != null) {
 			map.setOverlayPainter(getCompoundPainter());
-			map.setZoom(9);
-			map.setAddressLocation(waypointPainter.getWaypoints().iterator().next().getPosition());
+//			if (!waypointPainter.getWaypoints().isEmpty()) {
+//				map.setAddressLocation(waypointPainter.getWaypoints().iterator().next().getPosition());
+//			}
 		}
 	}
 	
@@ -72,6 +90,10 @@ public class PainterManager {
 	
 	public CompoundPainter getCompoundPainter() {
 		return compoundPainter;
+	}
+	
+	public WaypointPainter getSelectedWaypointPainter() {
+		return selectedWaypointPainter;
 	}
 	
 	public WaypointPainter getWaypointPainter() {
@@ -84,5 +106,9 @@ public class PainterManager {
 	
 	public PolygonPainter getPolygonPainter() {
 		return polygonPainter;
+	}
+
+	public WayPainter getSelectedWayPainter() {
+		return selectedWayPainter;
 	}
 }

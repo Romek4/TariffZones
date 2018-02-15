@@ -19,11 +19,10 @@ import tariffzones.model.Stop;
 public class StopWaypointRenderer implements WaypointRenderer<Stop> {
 
 	private BufferedImage img = null;
-	private Color color; 
-	private int i = 0;
+	private Color color = Color.BLACK;; 
+	private int ellipseDiameter = 10;
 	
 	public StopWaypointRenderer() {
-		color = Color.BLACK; //default
 	}
 	
 	public StopWaypointRenderer(Color color) {
@@ -36,10 +35,10 @@ public class StopWaypointRenderer implements WaypointRenderer<Stop> {
 		Point2D point = map.getTileFactory().geoToPixel(waypoint.getPosition(), map.getZoom());
 		if (img == null) {
 			Ellipse2D.Double ellipse = new Double();
-			ellipse.x = point.getX()-5;
-			ellipse.y = point.getY()-5;
-			ellipse.width = 10;
-			ellipse.height = 10;
+			ellipse.x = point.getX()-ellipseDiameter/2;
+			ellipse.y = point.getY()-ellipseDiameter/2;
+			ellipse.width = ellipseDiameter;
+			ellipse.height = ellipseDiameter;
 			g.setColor(color);
 			g.fill(ellipse);
 			g.draw(ellipse);
@@ -66,6 +65,10 @@ public class StopWaypointRenderer implements WaypointRenderer<Stop> {
 	
 	public void setColor(Color color) {
 		this.color = color;
+	}
+	
+	public void setEllipseDiameter(int ellipseDiameter) {
+		this.ellipseDiameter = ellipseDiameter;
 	}
 
 }

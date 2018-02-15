@@ -1,5 +1,6 @@
 package tariffzones.model;
 
+import java.awt.Color;
 import java.util.ArrayList;
 
 import org.jxmapviewer.viewer.GeoPosition;
