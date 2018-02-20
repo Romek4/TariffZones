@@ -494,6 +494,7 @@ public class TariffZonesView extends JFrame {
 								startPoint = null;
 								endPoint = null;
 								makeAWay = false;
+								
 							}
 							
 							//TODO: witch table?
