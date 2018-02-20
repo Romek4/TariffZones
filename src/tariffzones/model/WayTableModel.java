@@ -8,7 +8,7 @@ import javax.swing.table.AbstractTableModel;
 public class WayTableModel extends AbstractTableModel {
 
 	private String[] columnNames = {"Stop Name", "Stop Name", "Distance", "Time Length"};
-	private List<Way> data;
+	private List<Way> data = new ArrayList<>();
 	
 	public WayTableModel(List<Way> data) {
 		this.data = data;
@@ -30,17 +30,23 @@ public class WayTableModel extends AbstractTableModel {
     }
 
 	public Class getColumnClass(int c) {
+		if (data == null) {
+			return null;
+		}
+		
 		return getValueAt(0, c).getClass();
 	}
 
 	@Override
 	public int getRowCount() {
-		return data.size();
+		if (data != null) {
+			return data.size();
+		}
+		return 0;
 	}
 	
 	@Override
-	public boolean isCellEditable(int rowIndex, int columnIndex)
-	{
+	public boolean isCellEditable(int rowIndex, int columnIndex) {
 		//cannot edit stops in way table
 		if (columnIndex < 1) {
 			return false;
@@ -50,6 +56,10 @@ public class WayTableModel extends AbstractTableModel {
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
+		if (data == null) {
+			return null;
+		}
+		
 		Way way = data.get(rowIndex);
 		switch (columnIndex) {
 			case 0: return way.getStartPoint().getName();
@@ -61,6 +71,10 @@ public class WayTableModel extends AbstractTableModel {
 	}
 	
 	public Way getWayAt(int rowIndex) {
+		if (data == null) {
+			return null;
+		}
+		
 		if (rowIndex < data.size()) {
 			return data.get(rowIndex);
 		}
@@ -77,6 +91,10 @@ public class WayTableModel extends AbstractTableModel {
 	
 	@Override
 	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+		if (data == null) {
+			return;
+		}
+		
 		Way way = data.get(rowIndex);
 		switch (columnIndex) {
 			case 2: 

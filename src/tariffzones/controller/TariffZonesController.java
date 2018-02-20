@@ -562,6 +562,10 @@ public class TariffZonesController {
 	}
 	
 	public void fillTableWithStops(JTable table, ArrayList<Stop> list) {
+		if (list == null) {
+			return;
+		}
+		
 		StopTableModel stopTableModel = new StopTableModel(list);
 		table.setModel(stopTableModel);
 		table.getModel().addTableModelListener(new TableModelListener() {
@@ -577,6 +581,7 @@ public class TariffZonesController {
 				}
 			}
 		});
+		
 //		for (Object o : list.toArray()) {
 //			Stop stop = (Stop) o;
 //			tableModel.addRow(new Object[]{ stop.getNumber(), stop.getName()});
@@ -584,6 +589,9 @@ public class TariffZonesController {
 	}
 	
 	public void fillTableWithWays(JTable table, ArrayList<Way> list) {
+		if (list == null) {
+			return;
+		}
 		//TODO: mins/ km?
 		WayTableModel wayTableModel = new WayTableModel(list);
 		table.setModel(wayTableModel);
@@ -718,6 +726,40 @@ public class TariffZonesController {
 		
 		return null;
 	}
+
+	public int getClickedStopIndex(Point point) {
+		if (model.getNetwork().getStops() == null) {
+			return -1;
+		}
+		
+		ArrayList<Stop> stops = model.getNetwork().getStops();
+		for (int i = 0; i < stops.size(); i++) {
+			Point2D p = view.getMapViewer().convertGeoPositionToPoint(stops.get(i).getPosition());
+			if (point.distance(p) <= 5) { //TODO: make a constant or something
+				return i;
+			}
+		}
+		
+		return -1;
+	}
+	
+	public Way checkMousePositionForWay(Point point) {
+		if (model.getNetwork().getWays() == null) {
+			return null;
+		}
+		
+		for (Way way : model.getNetwork().getWays())
+		{
+			Point2D startPoint = view.getMapViewer().convertGeoPositionToPoint(way.getStartPosition());
+			Point2D endPoint = view.getMapViewer().convertGeoPositionToPoint(way.getEndPosition());
+			
+			if (point.distance(startPoint) + point.distance(endPoint) < startPoint.distance(endPoint) + 5) {
+				return way;
+			}
+		}
+		
+		return null;
+	}
 	
 	public void updateBtns() {
 		if (model.getNetwork() == null) {
@@ -826,6 +868,12 @@ public class TariffZonesController {
 		}
 		view.getMapViewer().setAddressLocation(ways.get(0).getStartPosition());
 		painterManager.getSelectedWayPainter().setWays(new HashSet<>(ways));
+		painterManager.repaintPainters();
+	}
+	
+	public void reset() {
+		painterManager.getSelectedWayPainter().setWays(new HashSet<>());
+		painterManager.getSelectedWaypointPainter().setWaypoints(new HashSet<>());
 		painterManager.repaintPainters();
 	}
 }

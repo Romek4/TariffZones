@@ -219,18 +219,6 @@ public class TariffZonesView extends JFrame {
 		getTileServersCb().setBounds(300, 10, 200, 50);
 		getMapViewer().add(getTileServersCb());
 		
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-				leftPanel, rightPanel);
-		splitPane.setOneTouchExpandable(true);
-		splitPane.setResizeWeight(0.5);
-		GridBagConstraints splitPaneGbc = new GridBagConstraints();
-		splitPaneGbc.gridx = 1;
-		splitPaneGbc.gridy = 1;
-		splitPaneGbc.weightx = 1;
-		splitPaneGbc.weighty = 1;
-		splitPaneGbc.fill = GridBagConstraints.BOTH;
-		this.add(splitPane, splitPaneGbc);
-		
 		//InfoPanel - bottom
 		JPanel infoPanel = new JPanel();
 		infoPanel.setBackground(Color.LIGHT_GRAY);
@@ -249,6 +237,18 @@ public class TariffZonesView extends JFrame {
 		
 		this.add(rightPanel, rightPanelgbc);
 		
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+				leftPanel, rightPanel);
+		splitPane.setOneTouchExpandable(true);
+		splitPane.setResizeWeight(0.05);
+		GridBagConstraints splitPaneGbc = new GridBagConstraints();
+		splitPaneGbc.gridx = 1;
+		splitPaneGbc.gridy = 1;
+		splitPaneGbc.weightx = 1;
+		splitPaneGbc.weighty = 1;
+		splitPaneGbc.fill = GridBagConstraints.BOTH;
+		this.add(splitPane, splitPaneGbc);
+		
 		this.validate();
 		this.pack();
 	}
@@ -258,12 +258,14 @@ public class TariffZonesView extends JFrame {
 			tablePanel = new JPanel();
 			tablePanel.setLayout(new GridBagLayout());
 	
+			JPanel upperTablePanel = new JPanel(new GridBagLayout());
+			
 			GridBagConstraints stopComboBoxConstraints = new GridBagConstraints();
 			stopComboBoxConstraints.gridx = 0;
 			stopComboBoxConstraints.gridy = 0;
 			stopComboBoxConstraints.weightx = 1;
 			stopComboBoxConstraints.fill = GridBagConstraints.BOTH;
-			tablePanel.add(getStopCb(), stopComboBoxConstraints);
+			upperTablePanel.add(getStopCb(), stopComboBoxConstraints);
 			
 			GridBagConstraints stopTableConstraints = new GridBagConstraints();
 			stopTableConstraints.gridx = 0;
@@ -271,22 +273,36 @@ public class TariffZonesView extends JFrame {
 			stopTableConstraints.weightx = 1;
 			stopTableConstraints.weighty = 0.5;
 			stopTableConstraints.fill = GridBagConstraints.BOTH;
-			tablePanel.add(new JScrollPane(getStopTable()), stopTableConstraints);
+			upperTablePanel.add(new JScrollPane(getStopTable()), stopTableConstraints);
+			
+			JPanel lowerTablePanel = new JPanel(new GridBagLayout());
 			
 			GridBagConstraints wayComboBoxConstraints = new GridBagConstraints();
 			wayComboBoxConstraints.gridx = 0;
-			wayComboBoxConstraints.gridy = 2;
+			wayComboBoxConstraints.gridy = 0;
 			wayComboBoxConstraints.weightx = 1;
 			wayComboBoxConstraints.fill = GridBagConstraints.BOTH;
-			tablePanel.add(getWayCb(), wayComboBoxConstraints);
+			lowerTablePanel.add(getWayCb(), wayComboBoxConstraints);
 			
 			GridBagConstraints wayTableConstraints = new GridBagConstraints();
 			wayTableConstraints.gridx = 0;
-			wayTableConstraints.gridy = 3;
+			wayTableConstraints.gridy = 2;
 			wayTableConstraints.weightx = 1;
 			wayTableConstraints.weighty = 0.5;
 			wayTableConstraints.fill = GridBagConstraints.BOTH;
-			tablePanel.add(new JScrollPane(getWayTable()), wayTableConstraints);
+			lowerTablePanel.add(new JScrollPane(getWayTable()), wayTableConstraints);
+			
+			JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, upperTablePanel, lowerTablePanel);
+			splitPane.setOneTouchExpandable(true);
+			splitPane.setResizeWeight(0.5);
+			
+			GridBagConstraints splitPaneGbc = new GridBagConstraints();
+			splitPaneGbc.gridx = 0;
+			splitPaneGbc.gridy = 1;
+			splitPaneGbc.weightx = 1;
+			splitPaneGbc.weighty = 1;
+			splitPaneGbc.fill = GridBagConstraints.BOTH;
+			tablePanel.add(splitPane, splitPaneGbc);
 		}
 		return tablePanel;
 	}
@@ -479,9 +495,20 @@ public class TariffZonesView extends JFrame {
 								endPoint = null;
 								makeAWay = false;
 							}
+							
+							//TODO: witch table?
+							int stopIndex = getController().getClickedStopIndex(e.getPoint());
+							if (stopIndex >= 0) {
+								int tableIndex = getStopTable().convertRowIndexToView(stopIndex);
+								getStopTable().setRowSelectionInterval(tableIndex, tableIndex);
+							}
+							else {
+								
+							}
 						}
 						else if (SwingUtilities.isRightMouseButton(e)) {
 							getController().checkForStopAndShowPopup(e.getPoint());
+							getController().checkMousePositionForWay(e.getPoint());
 						}
 					}
 					else if (e.getSource().equals(getStopTable())) {
@@ -539,18 +566,35 @@ public class TariffZonesView extends JFrame {
 					else if (e.getSource().equals(getStopCb())) {
 						if (getStopCb().getSelectedItem().toString().equals("Stops")) {
 							getController().fillTableWithStops(getStopTable());
+							getController().reset();
+							if (getWayCb().getSelectedItem().toString().equals("Stops")) {
+								getStopTable().setModel(getWayTable().getModel());
+								getWayCb().setSelectedItem("Ways");
+							}
 						}
 						else {
 							getController().fillTableWithWays(getStopTable());
+							getController().reset();
+							if (getWayCb().getSelectedItem().toString().equals("Ways")) {
+								getWayCb().setSelectedItem("Stops");
+							}
 						}
 					}
 					//second combobox
 					else if (e.getSource().equals(getWayCb())) {
 						if (getWayCb().getSelectedItem().toString().equals("Stops")) {
 							getController().fillTableWithStops(getWayTable());
+							getController().reset();
+							if (getStopCb().getSelectedItem().toString().equals("Stops")) {
+								getStopCb().setSelectedItem("Ways");
+							}
 						}
 						else {
 							getController().fillTableWithWays(getWayTable());
+							getController().reset();
+							if (getStopCb().getSelectedItem().toString().equals("Ways")) {
+								getStopCb().setSelectedItem("Stops");
+							}
 						}
 					}
 					else if (e.getSource().equals(getTileServersCb())) {
@@ -615,8 +659,10 @@ public class TariffZonesView extends JFrame {
 						
 						int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected stop/s?", "Stop Delete", JOptionPane.YES_NO_OPTION);
 						if (check == 0) {
+							int [] selectedRows = convertRowIndexes(getStopTable(), getStopTable().getSelectedRows());
+							
 							if (getStopCb().getSelectedItem().toString().equals("Stops")) {
-								getController().deleteStops(((StopTableModel)getStopTable().getModel()).getStopsAt(getStopTable().getSelectedRows()));
+								getController().deleteStops(((StopTableModel)getStopTable().getModel()).getStopsAt(selectedRows));
 							}
 							else {
 								getController().deleteWays(((WayTableModel)getStopTable().getModel()).getWaysAt(getStopTable().getSelectedRows()));
@@ -630,11 +676,13 @@ public class TariffZonesView extends JFrame {
 						
 						int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected way/s?", "Way Delete", JOptionPane.YES_NO_OPTION);
 						if (check == 0) {
+							int [] selectedRows = convertRowIndexes(getWayTable(), getWayTable().getSelectedRows());
+							
 							if (getWayCb().getSelectedItem().toString().equals("Stops")) {
-								getController().deleteStops(((StopTableModel)getWayTable().getModel()).getStopsAt(getWayTable().getSelectedRows()));
+								getController().deleteStops(((StopTableModel)getWayTable().getModel()).getStopsAt(selectedRows));
 							}
 							else {
-								getController().deleteWays(((WayTableModel)getWayTable().getModel()).getWaysAt(getWayTable().getSelectedRows()));
+								getController().deleteWays(((WayTableModel)getWayTable().getModel()).getWaysAt(selectedRows));
 							}
 						}
 					}
@@ -652,25 +700,38 @@ public class TariffZonesView extends JFrame {
 				@Override
 				public void valueChanged(ListSelectionEvent e) {
 					if (e.getSource().equals(getStopTable().getSelectionModel())) {
+ 						int [] selectedRows = convertRowIndexes(getStopTable(), getStopTable().getSelectedRows());
+						
 						if (getStopCb().getSelectedItem().toString().equals("Stops")) {
-							getController().highligthStops(((StopTableModel)getStopTable().getModel()).getStopsAt(getStopTable().getSelectedRows()), Color.RED);
+							getController().highligthStops(((StopTableModel)getStopTable().getModel()).getStopsAt(selectedRows), Color.RED);
 						}
 						else {
-							getController().highligthWays(((WayTableModel)getStopTable().getModel()).getWaysAt(getStopTable().getSelectedRows()), Color.RED);
+							getController().highligthWays(((WayTableModel)getStopTable().getModel()).getWaysAt(selectedRows), Color.RED);
 						}
 					}
 					else if (e.getSource().equals(getWayTable().getSelectionModel())) {
+						int [] selectedRows = convertRowIndexes(getWayTable(), getWayTable().getSelectedRows());
+						
 						if (getWayCb().getSelectedItem().toString().equals("Stops")) {
-							getController().highligthStops(((StopTableModel)getWayTable().getModel()).getStopsAt(getWayTable().getSelectedRows()), Color.RED);
+							getController().highligthStops(((StopTableModel)getWayTable().getModel()).getStopsAt(selectedRows), Color.RED);
 						}
 						else {
-							getController().highligthWays(((WayTableModel)getWayTable().getModel()).getWaysAt(getWayTable().getSelectedRows()), Color.RED);
+							getController().highligthWays(((WayTableModel)getWayTable().getModel()).getWaysAt(selectedRows), Color.RED);
 						}
 					}
 				}
 			};
 		}
 		return listSelectionListener;
+	}
+	
+	private int[] convertRowIndexes(JTable table, int[] selectedRows) {
+		selectedRows = table.getSelectedRows();
+		for (int i = 0; i < selectedRows.length; i++) {
+			selectedRows[i] = getStopTable().convertRowIndexToModel(selectedRows[i]);
+		}
+		
+		return selectedRows;
 	}
 	
 	public void registryListeners() {
@@ -693,6 +754,7 @@ public class TariffZonesView extends JFrame {
 		getStopTable().getSelectionModel().addListSelectionListener(getListSelectionListener());
 		getWayTable().getSelectionModel().addListSelectionListener(getListSelectionListener());
 		getStopTable().addMouseListener(getMouseListener());
+		getWayTable().addMouseListener(getMouseListener());
 	}
 	
 	public void unregistryListeners() {
@@ -715,6 +777,7 @@ public class TariffZonesView extends JFrame {
 		getStopTable().getSelectionModel().removeListSelectionListener(getListSelectionListener());
 		getWayTable().getSelectionModel().removeListSelectionListener(getListSelectionListener());
 		getStopTable().removeMouseListener(getMouseListener());
+		getWayTable().removeMouseListener(getMouseListener());
 	}
 	
 	public JPopupMenu getStopTablePopupMenu() {
@@ -848,7 +911,7 @@ public class TariffZonesView extends JFrame {
 	public JTable getStopTable() {
 		if (stopTable == null) {
 			stopTable = new JTable();
-//			stopTable.setAutoCreateRowSorter(true);
+			stopTable.setAutoCreateRowSorter(true);
 			
 //			RowSorter sorter = new TableRowSorter();
 //			stopTable.setRowSorter(sorter);
@@ -868,7 +931,7 @@ public class TariffZonesView extends JFrame {
 	public JTable getWayTable() {
 		if (wayTable == null) {
 			wayTable = new JTable();
-//			wayTable.setAutoCreateRowSorter(true);
+			wayTable.setAutoCreateRowSorter(true);
 		}
 		return wayTable;
 	}

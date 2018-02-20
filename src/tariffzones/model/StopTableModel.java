@@ -8,7 +8,7 @@ import javax.swing.table.AbstractTableModel;
 public class StopTableModel extends AbstractTableModel {
 
 	private String[] columnNames = {"Stop Number", "Stop Name", "Customers"};
-	private List<Stop> data;
+	private List<Stop> data = new ArrayList<>();
 	
 	public StopTableModel(List<Stop> data) {
 		this.data = data;
@@ -30,22 +30,32 @@ public class StopTableModel extends AbstractTableModel {
     }
 
 	public Class getColumnClass(int c) {
+		if (data == null) {
+			return null;
+		}
+		
 		return getValueAt(0, c).getClass();
 	}
 
 	@Override
 	public int getRowCount() {
-		return data.size();
+		if (data != null) {
+			return data.size();
+		}
+		return 0;
 	}
 	
 	@Override
-	public boolean isCellEditable(int rowIndex, int columnIndex)
-	{
+	public boolean isCellEditable(int rowIndex, int columnIndex) {
 	    return true;
 	}
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
+		if (data == null) {
+			return null;
+		}
+		
 		Stop stop = data.get(rowIndex);
 		switch (columnIndex) {
 			case 0: return stop.getNumber();
@@ -56,6 +66,10 @@ public class StopTableModel extends AbstractTableModel {
 	}
 	
 	public Stop getStopAt(int rowIndex) {
+		if (data == null) {
+			return null;
+		}
+		
 		if (rowIndex < data.size()) {
 			return data.get(rowIndex);
 		}
@@ -72,6 +86,10 @@ public class StopTableModel extends AbstractTableModel {
 	
 	@Override
 	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
+		if (data == null) {
+			return;
+		}
+		
 		Stop stop = data.get(rowIndex);
 		switch (columnIndex) {
 			case 0: 
