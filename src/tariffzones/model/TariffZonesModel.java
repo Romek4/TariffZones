@@ -54,7 +54,10 @@ public class TariffZonesModel {
 	
 	public TariffZonesModel() {
 		sqlProcessor = new SQLProcessor();
-		sqlProcessor.connectDatabase("admin", "admin");
+	}
+	
+	public boolean connectToDB(String dbUrl, String username, String password) {
+		return sqlProcessor.connectDatabase(dbUrl, username, password);
 	}
 	
 	public void runDjikstra() {
@@ -380,7 +383,6 @@ public class TariffZonesModel {
 		if (stop != null) {
 			if (getUnsavedStops().contains(stop)) {
 				getUnsavedStops().remove(stop);
-				return true;
 			}
 			stop.setState(State.REMOVED);
 			getUnsavedStops().add(stop);
@@ -397,7 +399,6 @@ public class TariffZonesModel {
 		if (way != null) {
 			if (getUnsavedWays().contains(way)) {
 				getUnsavedWays().remove(way);
-				return true;
 			}
 			way.setState(State.REMOVED);
 			getUnsavedWays().add(way);
@@ -461,6 +462,8 @@ public class TariffZonesModel {
 		Way way = new Way(startStop, endStop, wayLength, wayTimeLength);
 		way.setState(State.ADDED);
 		if (getNetwork().addWay(way) && getUnsavedWays().add(way)) {
+			startStop.addWay(way);
+			endStop.addWay(way);
 			return true;
 		}
 		return false;

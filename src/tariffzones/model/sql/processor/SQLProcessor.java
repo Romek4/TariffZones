@@ -16,13 +16,14 @@ public class SQLProcessor {
 	private PreparedStatement preparedStatement;
 	private ResultSet resultSet;
 	
-	public void connectDatabase(String username, String password) {
+	public boolean connectDatabase(String dbUrl, String username, String password) {
 		try {
 			Class.forName(DatabaseConnectionParametres.JDBC_DRIVER);
-			connection = DriverManager.getConnection(DatabaseConnectionParametres.DB_URL, username, password);
+			connection = DriverManager.getConnection(dbUrl, username, password);
+			return true;
 		} catch (SQLException | ClassNotFoundException e) {
-			System.err.println(e);
 			e.printStackTrace();
+			return false;
 		}
 	}
 	
@@ -45,7 +46,6 @@ public class SQLProcessor {
 						preparedStatement.setDouble(i, (double) value);
 					}
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
@@ -58,7 +58,6 @@ public class SQLProcessor {
 			buildStatement(preparedStatement, values);
 			resultSet = preparedStatement.executeQuery();
 		} catch (SQLException e) {
-			System.err.println("Select error: " + e);
 			e.printStackTrace();
 		}
 		
@@ -70,7 +69,6 @@ public class SQLProcessor {
 			buildStatement(preparedStatement, values);
 			preparedStatement.executeUpdate();
 		} catch (SQLException e) {
-			System.err.println("Insert error: " + e);
 			e.printStackTrace();
 		}
 	}
@@ -81,7 +79,6 @@ public class SQLProcessor {
 			buildStatement(preparedStatement, values);
 			preparedStatement.executeUpdate();
 		} catch (SQLException e) {
-			System.err.println("Delete error: " + e);
 			e.printStackTrace();
 		}
 	}
@@ -92,7 +89,6 @@ public class SQLProcessor {
 			buildStatement(preparedStatement, values);
 			preparedStatement.executeUpdate();
 		} catch (SQLException e) {
-			System.err.println("Update error: " + e);
 			e.printStackTrace();
 		}
 	}

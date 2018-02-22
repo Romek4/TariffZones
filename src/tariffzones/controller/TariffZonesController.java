@@ -30,6 +30,7 @@ import javax.swing.JTable;
 import javax.swing.JToolTip;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
+import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 
@@ -79,6 +80,9 @@ public class TariffZonesController {
 	private TileFactoryManager tileFactoryManager;
 	private Network loadedNetwork;
 	private Stop lastPickedStop;
+	private Way lastPickedWay;
+	
+	private boolean connectedToDB = false;
 
 	private final String IC_NETWORK_TYPE = "IC";
 	private final String OC_NETWORK_TYPE = "OC";
@@ -110,14 +114,7 @@ public class TariffZonesController {
 		view.getTileServersCb().addItem(humanitarianTileFactory);
 		
 		view.unregistryListeners();
-		List networks = model.getNetworks();
-		
-		if (networks != null) {
-			view.getCitiesCb().setModel((new DefaultComboBoxModel(networks.toArray())));
-		}
-		
 		view.registryListeners();
-		
 		updateBtns();
 	}
 	
@@ -302,7 +299,7 @@ public class TariffZonesController {
 //				GeoPosition coordinate2 = new GeoPosition(resultSet.getDouble("end_lat"), resultSet.getDouble("end_lon"));
 				
 				model.addWay(resultSet.getInt("start_number"), resultSet.getInt("end_number"), resultSet.getDouble("km_length"), resultSet.getDouble("time_length"));
-			}
+		}
 			
 			if (view.getStopCb().getSelectedItem().toString().equals("Ways")) {
 				fillTableWithWays(view.getStopTable(), model.getNetworkWays());
@@ -439,7 +436,7 @@ public class TariffZonesController {
 			fillTableWithWays(view.getWayTable(), model.getNetworkWays());
 		}
 		
-		painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
+		painterManager.getWayPainter().setWays(new HashSet<>(model.getNetworkWays()));
 		painterManager.repaintPainters();
 		updateBtns();
 	}
@@ -490,7 +487,7 @@ public class TariffZonesController {
 		try {
 			img = ImageIO.read(new FileInputStream("resources/images/editIcon.png"));
 			dlg.setIconLabelImg(img);
-			dlg.setIconLabelText("Edit stop");
+			dlg.setIconLabelText("Edit Stop");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -513,24 +510,70 @@ public class TariffZonesController {
 		
 		stop.setState(State.MODIFIED);
 		model.getUnsavedStops().add(stop);
+		updateBtns();
 		
-		//TODO: reduce complexity nad add just last added stop from list to table/s
-		//TODO: maybe create a methoc for this short code - same logic is used in addWaysBetweenStopsInCityToMap method
-//		if (view.getStopCb().getSelectedItem().toString().equals("Stops")) {
-//			fillTableWithStops(view.getStopTable(), model.getNetworkStops());
-//		}
-//		
-//		if (view.getWayCb().getSelectedItem().toString().equals("Stops")) {
-//			fillTableWithStops(view.getWayTable(), model.getNetworkStops());
-//		}
-//		
-//		painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
-//		painterManager.repaintPainters();
+		((AbstractTableModel) view.getStopTable().getModel()).fireTableDataChanged();
+		((AbstractTableModel) view.getWayTable().getModel()).fireTableDataChanged();
+	}
+	
+	public void editWay(Way way) {
+		AddWayDlg dlg = new AddWayDlg();
+		Image img;
+		try {
+			img = ImageIO.read(new FileInputStream("resources/images/editIcon.png"));
+			dlg.setIconLabelImg(img);
+			dlg.setIconLabelText("Edit Way");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		dlg.getWayLengthTf().setText(String.valueOf(way.getDistance()));
+		dlg.getWayTimeLengthTf().setText(String.valueOf(way.getTimeLength()));
 		
+		int option = JOptionPane.showConfirmDialog(view.getRootPane(), dlg, "Edit Way", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (option == 2) {
+            return;
+        }
+		
+		way.setDistance(Double.parseDouble(dlg.getWayLengthTf().getText()));
+		way.setTimeLength(Double.parseDouble(dlg.getWayTimeLengthTf().getText()));
+		
+		if (way.getState() == State.ADDED) {
+			return;
+		}
+		
+		way.setState(State.MODIFIED);
+		model.getUnsavedWays().add(way);
+		updateBtns();
+		
+		((AbstractTableModel) view.getStopTable().getModel()).fireTableDataChanged();
+		((AbstractTableModel) view.getWayTable().getModel()).fireTableDataChanged();
+	}
+	
+	public void deleteWay(Way way) {
+		
+		model.removeAndRememberWay(way);
+		
+		//FIXME: redundant code
+		if (view.getStopCb().getSelectedItem().toString().equals("Stops")) {
+			fillTableWithStops(view.getStopTable(), model.getNetworkStops());
+		}
+		
+		if (view.getWayCb().getSelectedItem().toString().equals("Stops")) {
+			fillTableWithStops(view.getWayTable(), model.getNetworkStops());
+		}
+		
+		painterManager.getWayPainter().setWays(new HashSet<>(model.getNetworkWays()));
+		painterManager.repaintPainters();
+		updateBtns();
 	}
 	
 	public void deleteNetwork(String networkName) {
 		model.deleteNetwork(networkName);
+	}
+	
+	public boolean connectToDB() {
+		connectedToDB = model.connectToDB("jdbc:mysql://localhost/traffic_networks_db?characterEncoding=UTF-8", "admin", "admin");
+		return connectedToDB;
 	}
 	
 	public boolean saveChangesToDatabase() {
@@ -685,13 +728,13 @@ public class TariffZonesController {
 		return countryIds;
 	}
 
-	public void checkForStopAndShowTooltip(Point point) {
+	public boolean checkForStopAndShowTooltip(Point point) {
 		Stop stop = checkMousePositionForStop(point);
 		JToolTip mapToolTip = ((MapViewer) view.getMapViewer()).getToolTip();
 		
 		if (stop == null) {
 			mapToolTip.setVisible(false);
-			return;
+			return false;
 		}
 		
 		((MapViewer) view.getMapViewer()).setLayout(null);
@@ -699,16 +742,35 @@ public class TariffZonesController {
 		mapToolTip.setTipText(s);
 		mapToolTip.setBounds((int)point.getX()+8, (int)point.getY()+8, s.length()*8, 20);
 		mapToolTip.setVisible(true);
+		return true;
 	}
 
-	public void checkForStopAndShowPopup(Point point) {
+	public boolean checkForStopAndShowPopup(Point point) {
 		Stop stop = checkMousePositionForStop(point);
 		if (stop == null) {
-			return;
+			return false;
 		}
 		
 		lastPickedStop = stop; //remember right clicked stop for possible delete or edit(to avoid it's finding again) 
-		view.getMapPopupMenu().show(view.getMapViewer(), (int) point.getX(), (int) point.getY());
+		view.getStopMapPopupMenu().show(view.getMapViewer(), (int) point.getX(), (int) point.getY());
+		return true;
+	}
+	
+	public boolean checkForWayAndShowTooltip(Point point) {
+		Way way = checkMousePositionForWay(point);
+		JToolTip mapToolTip = ((MapViewer) view.getMapViewer()).getToolTip();
+		
+		if (way == null) {
+			mapToolTip.setVisible(false);
+			return false;
+		}
+		
+		((MapViewer) view.getMapViewer()).setLayout(null);
+		String s = way.toString();
+		mapToolTip.setTipText(s);
+		mapToolTip.setBounds((int)point.getX()+8, (int)point.getY()+8, s.length()*8, 20);
+		mapToolTip.setVisible(true);
+		return true;
 	}
 	
 	public Stop checkMousePositionForStop(Point point) {
@@ -725,6 +787,17 @@ public class TariffZonesController {
 		}
 		
 		return null;
+	}
+
+	public boolean checkForWayAndShowPopup(Point point) {
+		Way way = checkMousePositionForWay(point);
+		if (way == null) {
+			return false;
+		}
+		
+		lastPickedWay = way; //remember right clicked way for possible delete or edit(to avoid it's finding again) 
+		view.getWayMapPopupMenu().show(view.getMapViewer(), (int) point.getX(), (int) point.getY());
+		return true;
 	}
 
 	public int getClickedStopIndex(Point point) {
@@ -748,17 +821,36 @@ public class TariffZonesController {
 			return null;
 		}
 		
-		for (Way way : model.getNetwork().getWays())
-		{
+		for (Way way : model.getNetwork().getWays()) {
+			
 			Point2D startPoint = view.getMapViewer().convertGeoPositionToPoint(way.getStartPosition());
 			Point2D endPoint = view.getMapViewer().convertGeoPositionToPoint(way.getEndPosition());
 			
-			if (point.distance(startPoint) + point.distance(endPoint) < startPoint.distance(endPoint) + 5) {
+			if (point.distance(startPoint) + point.distance(endPoint) < startPoint.distance(endPoint) + 2) {
 				return way;
 			}
 		}
 		
 		return null;
+	}
+	
+	public int getClickedWayIndex(Point point) {
+		if (model.getNetwork().getWays() == null) {
+			return -1;
+		}
+		
+		ArrayList<Way> ways = model.getNetwork().getWays();
+		for (int i = 0; i < ways.size(); i++) {
+			
+			Point2D startPoint = view.getMapViewer().convertGeoPositionToPoint(ways.get(i).getStartPosition());
+			Point2D endPoint = view.getMapViewer().convertGeoPositionToPoint(ways.get(i).getEndPosition());
+			
+			if (point.distance(startPoint) + point.distance(endPoint) < startPoint.distance(endPoint) + 2) {
+				return i;
+			}
+		}
+		
+		return -1;
 	}
 	
 	public void updateBtns() {
@@ -784,6 +876,11 @@ public class TariffZonesController {
 		}
 		return true;
 	}
+	
+	public void clearUnsaved() {
+		model.getUnsavedStops().clear();
+		model.getUnsavedWays().clear();
+	}
 
 	public void setView(TariffZonesView tariffZonesView) {
 		this.view = tariffZonesView;
@@ -800,8 +897,16 @@ public class TariffZonesController {
 		return lastPickedStop;
 	}
 	
-	public void resetLastPickedStopNumber() {
+	public void resetLastPickedStop() {
 		lastPickedStop = null;
+	}
+
+	public Way getLastPickedWay() {
+		return lastPickedWay;
+	}
+	
+	public void resetLastPickedWay() {
+		lastPickedWay = null;
 	}
 
 	public void exportStops() {
@@ -871,9 +976,13 @@ public class TariffZonesController {
 		painterManager.repaintPainters();
 	}
 	
-	public void reset() {
+	public void resetSelected() {
 		painterManager.getSelectedWayPainter().setWays(new HashSet<>());
 		painterManager.getSelectedWaypointPainter().setWaypoints(new HashSet<>());
 		painterManager.repaintPainters();
+	}
+
+	public List getNetworks() {
+		return model.getNetworks();
 	}
 }
