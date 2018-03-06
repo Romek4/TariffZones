@@ -18,12 +18,10 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultRowSorter;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -40,11 +38,9 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.RowFilter;
-import javax.swing.RowSorter;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 
@@ -63,6 +59,9 @@ import tariffzones.model.StopTableModel;
 import tariffzones.model.WayTableModel;
 
 public class TariffZonesView extends JFrame {
+	
+	private final String STOPS = "Stops";
+	private final String WAYS = "Ways";
 	
 	private JPanel toolBoxPanel, tablePanel;
 	private JLabel infoLabel;
@@ -118,6 +117,7 @@ public class TariffZonesView extends JFrame {
 	private MouseListener mapViewerMouseListener;
 	private MouseMotionListener mapViewerMouseMotionListener;
 	private ActionListener actionListener;
+	private KeyListener keyListener;
 	
 	private static final String DEFAULT_INFO_MSG = "Use wheel for zoom. Drag left mouse button to move.";
 	private static final String MAKEPOINT_INFO_MSG = "Use left mouse button to point on the map.";
@@ -139,20 +139,6 @@ public class TariffZonesView extends JFrame {
 		
 		initializeComponents();
 		tariffZonesController.activate();
-		
-		this.addKeyListener(new KeyAdapter() {
-			
-			@Override
-			public void keyPressed(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-					makeAPoint = false;
-					makeAWay = false;
-					startPoint = null;
-					endPoint = null;
-					getInfoLabel().setText(DEFAULT_INFO_MSG);
-				}
-			}
-		});
 	}
 
 	private void initializeComponents() {
@@ -167,19 +153,6 @@ public class TariffZonesView extends JFrame {
 		fileMenu.add(exportMenu);
 		menuBar.add(fileMenu);
 		
-//		JMenuItem importMenuItem = new JMenuItem("Import");
-//		JMenuItem helpMenuItem = new JMenuItem("Help");
-		
-//		importMenuItem.addActionListener(new ActionListener() {
-//			
-//			@Override
-//			public void actionPerformed(ActionEvent e) {
-//				//TODO:
-//				tariffZonesController.readBusStops("d:\\Diplomová práca\\TariffZones\\DP data\\MHD ZA\\zastavky.txt");
-//				
-//			}
-//		});
-		
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.gridx = 0;
 		gbc.gridy = 0;
@@ -187,16 +160,6 @@ public class TariffZonesView extends JFrame {
 		gbc.weighty = 0.03;
 		gbc.anchor = GridBagConstraints.FIRST_LINE_START;
 		gbc.fill = GridBagConstraints.BOTH;
-//		menuBar.add(fileMenuItem, gbc);
-//		menuBar.add(importMenuItem, gbc);
-//		menuBar.add(helpMenuItem, gbc);
-//		
-//		GridBagConstraints menuBarConstraints = new GridBagConstraints();
-//		menuBarConstraints.gridx = 0;
-//		menuBarConstraints.gridy = 0;
-//		menuBarConstraints.gridheight = 1;
-//		menuBarConstraints.fill = GridBagConstraints.BOTH;
-//		this.add(menuBar, menuBarConstraints);
 		
 		this.add(menuBar, gbc);
 		
@@ -205,8 +168,6 @@ public class TariffZonesView extends JFrame {
 		GridBagConstraints leftPanelgbc = new GridBagConstraints();
 		leftPanelgbc.gridx = 0;
 		leftPanelgbc.gridy = 1;
-//		leftPanelgbc.gridwidth = 1;
-//		leftPanelgbc.gridheight = 5;
 		leftPanelgbc.weightx = 0.1;
 		leftPanelgbc.weighty = 1;
 		leftPanelgbc.fill = GridBagConstraints.BOTH;		
@@ -265,8 +226,6 @@ public class TariffZonesView extends JFrame {
 		GridBagConstraints infoPanelConstraints = new GridBagConstraints();
 		infoPanelConstraints.gridx = 0;
 		infoPanelConstraints.gridy = 1;
-//		infoPanelConstraints.gridwidth = 4;
-//		infoPanelConstraints.gridheight = 1;
 		infoPanelConstraints.fill = GridBagConstraints.BOTH;
 		rightPanel.add(infoPanel, infoPanelConstraints);
 		
@@ -304,14 +263,6 @@ public class TariffZonesView extends JFrame {
 			
 			JLabel stopFilterLb = new JLabel("Filter: ");
 			stopFilterLb.setHorizontalAlignment(JLabel.CENTER);
-//			filterLb.setSize(new Dimension(16, 16));
-//			Image img;
-//			try {
-//				img = ImageIO.read(new FileInputStream("resources/images/filterIcon.png"));
-//				filterLb.setIcon(new ImageIcon(img.getScaledInstance(filterLb.getWidth(), filterLb.getHeight(), Image.SCALE_SMOOTH)));
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
 			
 			GridBagConstraints stopFilterLbConstraints = new GridBagConstraints();
 			stopFilterLbConstraints.gridx = 1;
@@ -341,7 +292,7 @@ public class TariffZonesView extends JFrame {
 			GridBagConstraints wayComboBoxConstraints = new GridBagConstraints();
 			wayComboBoxConstraints.gridx = 0;
 			wayComboBoxConstraints.gridy = 0;
-			wayComboBoxConstraints.weightx = 1;
+			wayComboBoxConstraints.weightx = 0.5;
 			wayComboBoxConstraints.fill = GridBagConstraints.BOTH;
 			lowerTablePanel.add(getWayCb(), wayComboBoxConstraints);
 			
@@ -436,130 +387,6 @@ public class TariffZonesView extends JFrame {
 		}
 		return toolBoxPanel;
 	}
-
-	public void clearMapViewer() {
-//		getMapViewer().getMapMarkerList().clear();
-//		getMapViewer().getMapPolygonList().clear();
-	}
-	
-	private JButton getOpenNetworkFromFilesBtn() {
-		if (openNetworkFromFilesBtn == null) {
-			openNetworkFromFilesBtn = new JButton();
-			openNetworkFromFilesBtn.setSize(new Dimension(48, 48));
-			openNetworkFromFilesBtn.setContentAreaFilled(true);
-			try {
-				Image img = ImageIO.read(new FileInputStream("resources/images/openIcon.png"));
-				openNetworkFromFilesBtn.setIcon(new ImageIcon(img.getScaledInstance(openNetworkFromFilesBtn.getWidth(), openNetworkFromFilesBtn.getHeight(), Image.SCALE_SMOOTH)));
-				openNetworkFromFilesBtn.setToolTipText("Read network from files");
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		return openNetworkFromFilesBtn;
-	}
-	
-	private JButton getRemoveNetworkBtn() {
-		if (removeNetoworkBtn == null) {
-			removeNetoworkBtn = new JButton();
-			removeNetoworkBtn.setSize(new Dimension(24, 24));
-			removeNetoworkBtn.setContentAreaFilled(true);
-			try {
-				Image img = ImageIO.read(new FileInputStream("resources/images/removeIcon.png"));
-				removeNetoworkBtn.setIcon(new ImageIcon(img.getScaledInstance(removeNetoworkBtn.getWidth(), removeNetoworkBtn.getHeight(), Image.SCALE_SMOOTH)));
-				removeNetoworkBtn.setToolTipText("Delete network");
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		return removeNetoworkBtn;
-	}
-	
-	public JButton getConnectToDBBtn() {
-		if (connectToDBBtn == null) {
-			try {
-				connectToDBBtn = new JButton();
-				connectToDBBtn.setSize(new Dimension(24, 24));
-				connectToDBBtn.setContentAreaFilled(false);
-				Image img = ImageIO.read(new FileInputStream("resources/images/databaseConnectionIcon.png"));
-				connectToDBBtn.setIcon(new ImageIcon(img.getScaledInstance(connectToDBBtn.getWidth(), connectToDBBtn.getHeight(), Image.SCALE_SMOOTH)));
-				connectToDBBtn.setToolTipText("Connect to database");
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		return connectToDBBtn;
-	}
-	
-	private JButton getSolveBtn() {
-		return getMapToolboxPl().getSolveBtn();
-	}
-	
-	private JButton getAddStopBtn() {
-		return getMapToolboxPl().getPointBtn();
-	}
-	
-	private JButton getAddWayBtn() {
-		return getMapToolboxPl().getWayBtn();
-	}
-	
-	private JButton getSaveBtn() {
-		return getMapToolboxPl().getSaveBtn();
-	}
-
-	public JComboBox getWayCb() {
-		if (wayCb == null) {
-			wayCb = new JComboBox<String>();
-			wayCb.addItem("Ways");
-			wayCb.addItem("Stops");
-		}
-		return wayCb;
-	}
-	
-	public JComboBox getStopCb() {
-		if (stopCb == null) {
-			stopCb = new JComboBox<String>();
-			stopCb.addItem("Stops");
-			stopCb.addItem("Ways");
-		}
-		return stopCb;
-	}
-	
-	public JComboBox getTileServersCb() {
-		if (tileServersCb == null) {
-			tileServersCb = new JComboBox();
-			tileServersCb.setFont(new Font(tileServersCb.getFont().getName(), Font.BOLD, 14));
-	        tileServersCb.setMaximumRowCount(3);
-		}
-		return tileServersCb;
-	}
-	
-	public MapToolboxPl getMapToolboxPl() {
-		if (mapToolboxPl == null) {
-			mapToolboxPl = new MapToolboxPl();
-		}
-		return mapToolboxPl;
-	}
-	
-	public JXMapViewer getMapViewer() {
-		if (mapViewer == null) {
-			mapViewer = new MapViewer();
-
-			// Create a TileFactoryInfo for OpenStreetMap
-			TileFactoryInfo info = new OSMTileFactoryInfo();
-			DefaultTileFactory tileFactory = new DefaultTileFactory(info);
-			mapViewer.setTileFactory(tileFactory);
-			
-			// Use 8 threads in parallel to load the tiles
-			tileFactory.setThreadPoolSize(8);
-
-			// Set the focus
-			GeoPosition slovakia = new GeoPosition(48.8, 19.2);
-
-			mapViewer.setZoom(15);
-			mapViewer.setAddressLocation(slovakia);
-		}
-		return mapViewer;
-	}
 	
 	private MouseListener getMouseListener() {
 		if (mapViewerMouseListener == null) {
@@ -569,7 +396,7 @@ public class TariffZonesView extends JFrame {
 					if (e.getSource().equals(getMapViewer())) {
 						if (SwingUtilities.isLeftMouseButton(e)) {
 							if (makeAPoint) {
-								getController().addBusStop(e.getPoint());
+								getController().addStop(e.getPoint());
 								makeAPoint = false;
 							}
 							else if (makeAWay) {
@@ -587,7 +414,6 @@ public class TariffZonesView extends JFrame {
 									getInfoLabel().setText("Click on ending stop of new way");
 									if (getController().checkMousePositionForStop(e.getPoint()) != null) {
 										endPoint = e.getPoint();
-										getInfoLabel().setText(DEFAULT_INFO_MSG);
 									}
 								}
 								
@@ -599,14 +425,13 @@ public class TariffZonesView extends JFrame {
 								startPoint = null;
 								endPoint = null;
 								makeAWay = false;
-								
+								getInfoLabel().setText(DEFAULT_INFO_MSG);
 							}
 							
-							//TODO: witch table?
 							int stopIndex = getController().getClickedStopIndex(e.getPoint());
 							int wayIndex = getController().getClickedWayIndex(e.getPoint());
 							if (stopIndex >= 0) {
-								if (getStopCb().getSelectedItem().toString().equals("Stops")) {
+								if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
 									int tableIndex = getStopTable().convertRowIndexToView(stopIndex);
 									getStopTable().setRowSelectionInterval(tableIndex, tableIndex);
 								}
@@ -691,6 +516,7 @@ public class TariffZonesView extends JFrame {
 							int check = JOptionPane.showConfirmDialog(getContentPane(), "There are some unsaved changes! Do you want to save changes before reloading of network?", "Stop delete", JOptionPane.YES_NO_OPTION);
 							if (check == 0) {
 								if (getController().saveChangesToDatabase()) {
+									refreshCitiesCb();
 									getController().clearUnsaved();
 									getController().updateBtns();
 									JOptionPane.showMessageDialog(getContentPane(), "Data saved.", "Save Data To Database", JOptionPane.INFORMATION_MESSAGE);
@@ -698,7 +524,6 @@ public class TariffZonesView extends JFrame {
 							}
 						}
 						
-						clearMapViewer();
 						Object selectedItem = getCitiesCb().getSelectedItem();
 						if (selectedItem != null) {
 							getController().addStopsInNetworkToMap(((Network)selectedItem).getNetworkName());
@@ -707,36 +532,36 @@ public class TariffZonesView extends JFrame {
 					}
 					//first combobox
 					else if (e.getSource().equals(getStopCb())) {
-						if (getStopCb().getSelectedItem().toString().equals("Stops")) {
+						if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
 							getController().fillTableWithStops(getStopTable());
 							getController().resetSelected();
-							if (getWayCb().getSelectedItem().toString().equals("Stops")) {
+							if (getWayCb().getSelectedItem().toString().equals(STOPS)) {
 								getStopTable().setModel(getWayTable().getModel());
-								getWayCb().setSelectedItem("Ways");
+								getWayCb().setSelectedItem(WAYS);
 							}
 						}
 						else {
 							getController().fillTableWithWays(getStopTable());
 							getController().resetSelected();
-							if (getWayCb().getSelectedItem().toString().equals("Ways")) {
-								getWayCb().setSelectedItem("Stops");
+							if (getWayCb().getSelectedItem().toString().equals(WAYS)) {
+								getWayCb().setSelectedItem(STOPS);
 							}
 						}
 					}
 					//second combobox
 					else if (e.getSource().equals(getWayCb())) {
-						if (getWayCb().getSelectedItem().toString().equals("Stops")) {
+						if (getWayCb().getSelectedItem().toString().equals(STOPS)) {
 							getController().fillTableWithStops(getWayTable());
 							getController().resetSelected();
-							if (getStopCb().getSelectedItem().toString().equals("Stops")) {
-								getStopCb().setSelectedItem("Ways");
+							if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
+								getStopCb().setSelectedItem(WAYS);
 							}
 						}
 						else {
 							getController().fillTableWithWays(getWayTable());
 							getController().resetSelected();
-							if (getStopCb().getSelectedItem().toString().equals("Ways")) {
-								getStopCb().setSelectedItem("Stops");
+							if (getStopCb().getSelectedItem().toString().equals(WAYS)) {
+								getStopCb().setSelectedItem(STOPS);
 							}
 						}
 					}
@@ -771,6 +596,7 @@ public class TariffZonesView extends JFrame {
 					}
 					else if(e.getSource().equals(getSaveBtn())) {
 						if (getController().saveChangesToDatabase()) {
+							refreshCitiesCb();
 							getController().clearUnsaved();
 							getController().updateBtns();
 							JOptionPane.showMessageDialog(getContentPane(), "Data saved.", "Save Data To Database", JOptionPane.INFORMATION_MESSAGE);
@@ -787,7 +613,8 @@ public class TariffZonesView extends JFrame {
 						if (getCitiesCb().getSelectedItem() != null) {
 							int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete this network?", "Network Delete", JOptionPane.YES_NO_OPTION);
 							if (check == 0) {
-								getController().deleteNetwork(getCitiesCb().getSelectedItem().toString());
+								getController().deleteNetwork(((Network)getCitiesCb().getSelectedItem()).getNetworkName());
+								refreshCitiesCb();
 							}
 						}
 					}
@@ -824,7 +651,7 @@ public class TariffZonesView extends JFrame {
 						
 						int [] selectedRows = convertRowIndexes(getStopTable(), getStopTable().getSelectedRows());
 						
-						if (getStopCb().getSelectedItem().toString().equals("Stops")) {
+						if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
 							int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected stop/s?", "Stop Delete", JOptionPane.YES_NO_OPTION);
 							if (check == 0) {
 								getController().deleteStops(((StopTableModel)getStopTable().getModel()).getStopsAt(selectedRows));
@@ -844,7 +671,7 @@ public class TariffZonesView extends JFrame {
 					
 						int [] selectedRows = convertRowIndexes(getWayTable(), getWayTable().getSelectedRows());
 						
-						if (getWayCb().getSelectedItem().toString().equals("Stops")) {
+						if (getWayCb().getSelectedItem().toString().equals(STOPS)) {
 							int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected stop/s?", "Stop Delete", JOptionPane.YES_NO_OPTION);
 							if (check == 0) {
 								getController().deleteStops(((StopTableModel)getWayTable().getModel()).getStopsAt(selectedRows));
@@ -864,6 +691,26 @@ public class TariffZonesView extends JFrame {
 		return actionListener;
 	}
 	
+	public KeyListener getKeyListener() {
+		if (keyListener == null) {
+			keyListener = new KeyAdapter() {
+				
+				@Override
+				public void keyPressed(KeyEvent e) {
+					if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+						makeAPoint = false;
+						makeAWay = false;
+						startPoint = null;
+						endPoint = null;
+						getInfoLabel().setText(DEFAULT_INFO_MSG);
+					}
+				}
+			};
+		}
+		
+		return keyListener;
+	}
+	
 	public ListSelectionListener getListSelectionListener() {
 		if (listSelectionListener == null) {
 			listSelectionListener = new ListSelectionListener() {
@@ -873,7 +720,7 @@ public class TariffZonesView extends JFrame {
 					if (e.getSource().equals(getStopTable().getSelectionModel())) {
  						int [] selectedRows = convertRowIndexes(getStopTable(), getStopTable().getSelectedRows());
 						
-						if (getStopCb().getSelectedItem().toString().equals("Stops")) {
+						if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
 							getController().highligthStops(((StopTableModel)getStopTable().getModel()).getStopsAt(selectedRows), Color.RED);
 						}
 						else {
@@ -883,7 +730,7 @@ public class TariffZonesView extends JFrame {
 					else if (e.getSource().equals(getWayTable().getSelectionModel())) {
 						int [] selectedRows = convertRowIndexes(getWayTable(), getWayTable().getSelectedRows());
 						
-						if (getWayCb().getSelectedItem().toString().equals("Stops")) {
+						if (getWayCb().getSelectedItem().toString().equals(STOPS)) {
 							getController().highligthStops(((StopTableModel)getWayTable().getModel()).getStopsAt(selectedRows), Color.RED);
 						}
 						else {
@@ -894,6 +741,13 @@ public class TariffZonesView extends JFrame {
 			};
 		}
 		return listSelectionListener;
+	}
+	
+	private void refreshCitiesCb() {
+		List networks = getController().getNetworks();
+		if (networks != null) {
+			getCitiesCb().setModel((new DefaultComboBoxModel(networks.toArray())));
+		}
 	}
 	
 	private int[] convertRowIndexes(JTable table, int[] selectedRows) {
@@ -933,6 +787,8 @@ public class TariffZonesView extends JFrame {
 		getWayTable().getSelectionModel().addListSelectionListener(getListSelectionListener());
 		getStopTable().addMouseListener(getMouseListener());
 		getWayTable().addMouseListener(getMouseListener());
+		getAddStopBtn().addKeyListener(getKeyListener());
+		getAddWayBtn().addKeyListener(getKeyListener());
 	}
 	
 	public void unregistryListeners() {
@@ -963,6 +819,127 @@ public class TariffZonesView extends JFrame {
 		getWayTable().getSelectionModel().removeListSelectionListener(getListSelectionListener());
 		getStopTable().removeMouseListener(getMouseListener());
 		getWayTable().removeMouseListener(getMouseListener());
+		getAddStopBtn().removeKeyListener(getKeyListener());
+		getAddWayBtn().removeKeyListener(getKeyListener());
+	}
+	
+	private JButton getOpenNetworkFromFilesBtn() {
+		if (openNetworkFromFilesBtn == null) {
+			openNetworkFromFilesBtn = new JButton();
+			openNetworkFromFilesBtn.setSize(new Dimension(48, 48));
+			openNetworkFromFilesBtn.setContentAreaFilled(true);
+			try {
+				Image img = ImageIO.read(new FileInputStream("resources/images/openIcon.png"));
+				openNetworkFromFilesBtn.setIcon(new ImageIcon(img.getScaledInstance(openNetworkFromFilesBtn.getWidth(), openNetworkFromFilesBtn.getHeight(), Image.SCALE_SMOOTH)));
+				openNetworkFromFilesBtn.setToolTipText("Read network from files");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return openNetworkFromFilesBtn;
+	}
+	
+	private JButton getRemoveNetworkBtn() {
+		if (removeNetoworkBtn == null) {
+			removeNetoworkBtn = new JButton();
+			removeNetoworkBtn.setSize(new Dimension(24, 24));
+			removeNetoworkBtn.setContentAreaFilled(true);
+			try {
+				Image img = ImageIO.read(new FileInputStream("resources/images/removeIcon.png"));
+				removeNetoworkBtn.setIcon(new ImageIcon(img.getScaledInstance(removeNetoworkBtn.getWidth(), removeNetoworkBtn.getHeight(), Image.SCALE_SMOOTH)));
+				removeNetoworkBtn.setToolTipText("Delete network");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return removeNetoworkBtn;
+	}
+	
+	public JButton getConnectToDBBtn() {
+		if (connectToDBBtn == null) {
+			try {
+				connectToDBBtn = new JButton();
+				connectToDBBtn.setSize(new Dimension(24, 24));
+				connectToDBBtn.setContentAreaFilled(false);
+				Image img = ImageIO.read(new FileInputStream("resources/images/databaseConnectionIcon.png"));
+				connectToDBBtn.setIcon(new ImageIcon(img.getScaledInstance(connectToDBBtn.getWidth(), connectToDBBtn.getHeight(), Image.SCALE_SMOOTH)));
+				connectToDBBtn.setToolTipText("Connect to database");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return connectToDBBtn;
+	}
+
+	public JComboBox getWayCb() {
+		if (wayCb == null) {
+			wayCb = new JComboBox<String>();
+			wayCb.addItem(WAYS);
+			wayCb.addItem(STOPS);
+		}
+		return wayCb;
+	}
+	
+	public JComboBox getStopCb() {
+		if (stopCb == null) {
+			stopCb = new JComboBox<String>();
+			stopCb.addItem(STOPS);
+			stopCb.addItem(WAYS);
+		}
+		return stopCb;
+	}
+	
+	public JComboBox getTileServersCb() {
+		if (tileServersCb == null) {
+			tileServersCb = new JComboBox();
+			tileServersCb.setFont(new Font(tileServersCb.getFont().getName(), Font.BOLD, 14));
+	        tileServersCb.setMaximumRowCount(3);
+		}
+		return tileServersCb;
+	}
+	
+	private JButton getSolveBtn() {
+		return getMapToolboxPl().getSolveBtn();
+	}
+	
+	private JButton getAddStopBtn() {
+		return getMapToolboxPl().getPointBtn();
+	}
+	
+	private JButton getAddWayBtn() {
+		return getMapToolboxPl().getWayBtn();
+	}
+	
+	private JButton getSaveBtn() {
+		return getMapToolboxPl().getSaveBtn();
+	}
+	
+	public MapToolboxPl getMapToolboxPl() {
+		if (mapToolboxPl == null) {
+			mapToolboxPl = new MapToolboxPl();
+		}
+		return mapToolboxPl;
+	}
+	
+	public JXMapViewer getMapViewer() {
+		if (mapViewer == null) {
+			mapViewer = new MapViewer();
+
+			// Create a TileFactoryInfo for OpenStreetMap
+			TileFactoryInfo info = new OSMTileFactoryInfo();
+			DefaultTileFactory tileFactory = new DefaultTileFactory(info);
+			mapViewer.setTileFactory(tileFactory);
+			
+			// Use 8 threads in parallel to load the tiles
+			tileFactory.setThreadPoolSize(8);
+
+			// Set the focus
+			GeoPosition slovakia = new GeoPosition(48.8, 19.2);
+
+			mapViewer.setZoom(15);
+			mapViewer.setAddressLocation(slovakia);
+		}
+		return mapViewer;
 	}
 	
 	public JPopupMenu getStopTablePopupMenu() {

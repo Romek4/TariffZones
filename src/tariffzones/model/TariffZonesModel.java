@@ -1,17 +1,11 @@
 package tariffzones.model;
 
-import java.awt.geom.Ellipse2D;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.jxmapviewer.viewer.GeoPosition;
-
-import com.mysql.jdbc.ResultSetRow;
-
 import tariffzones.model.sql.interfaces.NetworkSelectAllNames;
 import tariffzones.model.sql.interfaces.NetworkSelectByName;
 import tariffzones.model.sql.interfaces.NetworkSelectNetworkCountryIdByName;
@@ -29,13 +23,11 @@ import tariffzones.model.sql.interfaces.WayInsert;
 import tariffzones.model.sql.interfaces.WayUpdate;
 import tariffzones.model.sql.interfaces.EdgeSelectCoordsByNetworkName;
 import tariffzones.model.sql.interfaces.EdgeSelectStopNamesAndTime;
-import tariffzones.model.sql.interfaces.EdgesOfStopDelete;
 import tariffzones.model.sql.interfaces.NetworkDelete;
 import tariffzones.model.sql.interfaces.NetworkInsert;
 import tariffzones.model.sql.processor.DataImporter;
 import tariffzones.model.sql.processor.SQLProcessor;
 import tariffzones.tariffzonesprocessor.djikstra.Djikstra;
-import tariffzones.tariffzonesprocessor.djikstra.Edge;
 import tariffzones.tariffzonesprocessor.djikstra.Graph;
 import tariffzones.tariffzonesprocessor.djikstra.Node;
 
@@ -123,6 +115,7 @@ public class TariffZonesModel {
 	}
 	
 	public List getNetworks() {
+		sqlParameters = new Object[1];
 		sqlProcessor.select(NetworkSelectByName.SQL, sqlParameters);
 		
 		networks = new ArrayList<>();
@@ -212,10 +205,6 @@ public class TariffZonesModel {
 		return getDataImporter().readODMatrix(fileName, nodes);
 	}
 	
-//	public void readBusStops(String busStopFileName) {
-//		getDataImporter().readBusStops(busStopFileName);
-//	}
-	
 	public ArrayList readStops(String fileName) throws IOException, FileNotFoundException {
 		return getDataImporter().readStops(fileName);
 	}
@@ -244,21 +233,22 @@ public class TariffZonesModel {
 			if (sqlProcessor.getResultSet().next()) {
 				networkId = Integer.parseInt(sqlProcessor.getResultSet().getString("network_id"));
 			}
+		
+			if (networkId < 0) { return; }
+			
+			String countryId = getNetworkCountryId(networkName);
+			deleteWays(getNetworkWays());
+			deleteStops(networkId, countryId, getNetworkStops());
+			
+			sqlParameters = new Object[2];
+			sqlParameters[NetworkDelete.PAR_NETWORK_NAME] = networkName;
+			sqlProcessor.delete(NetworkDelete.SQL, sqlParameters);
+
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		
-		if (networkId < 0) { return; }
-		
-		String countryId = getNetworkCountryId(networkName);
-		deleteWays(getNetworkWays());
-		deleteStops(networkId, countryId, getNetworkStops());
-		
-		sqlParameters = new Object[2];
-		sqlParameters[NetworkDelete.PAR_NETWORK_NAME] = networkName;
-		sqlProcessor.delete(NetworkDelete.SQL, sqlParameters);
 	}
 	
 	private void insertWay(Stop startStop, Stop endStop, double distance, double timeLength) {
@@ -359,26 +349,6 @@ public class TariffZonesModel {
 		return false;
 	}
 	
-	public void deleteStops(int networkId, String countryID, ArrayList<Stop> stops) {
-		if (stops == null) {
-			return;
-		}
-		
-		for (Stop stop : stops) {
-			deleteStop(networkId, countryID, stop.getNumber());
-		}
-	}
-	
-	public void deleteWays(ArrayList<Way> ways) {
-		if (ways == null) {
-			return;
-		}
-		
-		for (Way way : ways) {
-			deleteWay(way.getStartPoint(), way.getEndPoint());;
-		}
-	}
-	
 	public boolean removeAndRememberStop(Stop stop) {
 		if (stop != null) {
 			if (getUnsavedStops().contains(stop)) {
@@ -394,6 +364,35 @@ public class TariffZonesModel {
 		}
 		return false;
 	}
+	
+	public void deleteStops(int networkId, String countryID, ArrayList<Stop> stops) {
+		if (stops == null) {
+			return;
+		}
+		
+		for (Stop stop : stops) {
+			deleteStop(networkId, countryID, stop.getNumber());
+		}
+	}
+	
+	public void deleteStop(int networkId, String countryID, int stopNumber) {
+		sqlParameters = new Object[4];
+		sqlParameters[StopInsert.PAR_NETWORK_ID] = networkId;
+		sqlParameters[StopInsert.PAR_COUNTRY_ID] = countryID;
+		sqlParameters[StopInsert.PAR_STOP_NUMBER] = stopNumber;
+		
+		sqlProcessor.delete(StopDelete.SQL, sqlParameters);
+	}
+	
+	public void deleteWays(ArrayList<Way> ways) {
+		if (ways == null) {
+			return;
+		}
+		
+		for (Way way : ways) {
+			deleteWay(way.getStartPoint(), way.getEndPoint());;
+		}
+	}
 
 	public boolean removeAndRememberWay(Way way) {
 		if (way != null) {
@@ -407,43 +406,6 @@ public class TariffZonesModel {
 		}
 		return false;
 	}
-	
-//	public boolean removeAndRememberStop(int stopNumber) {
-//		Stop stop = getNetwork().findStop(stopNumber);
-//		if (stop != null) {
-//			if (getUnsavedStops().contains(stop)) {
-//				getUnsavedStops().remove(stop);
-//				return true;
-//			}
-//			stop.setState(State.REMOVED);
-//			getUnsavedStops().add(stop);
-//			getNetwork().removeStop(stop);
-//			return true;
-//		}
-//		return false;
-//	}
-	
-	public void deleteStop(int networkId, String countryID, int stopNumber) {
-//		deleteEdgesOfStop(networkId, countryID, stopNumber);
-		
-		sqlParameters = new Object[4];
-		sqlParameters[StopInsert.PAR_NETWORK_ID] = networkId;
-		sqlParameters[StopInsert.PAR_COUNTRY_ID] = countryID;
-		sqlParameters[StopInsert.PAR_STOP_NUMBER] = stopNumber;
-		
-		sqlProcessor.delete(StopDelete.SQL, sqlParameters);
-	}
-	
-//	private void deleteEdgesOfStop(int networkId, String countryID, int stopNumber) {
-//		sqlParameters = new Object[5];
-//		sqlParameters[EdgesOfStopDelete.PAR_START_NETWORK_ID] = networkId;
-//		sqlParameters[EdgesOfStopDelete.PAR_START_STOP_ID] = stopNumber;
-//		sqlParameters[EdgesOfStopDelete.PAR_END_STOP_ID] = stopNumber;
-//		sqlParameters[EdgesOfStopDelete.PAR_END_NETWORK_ID] = networkId;
-//		
-//		sqlProcessor.delete(EdgesOfStopDelete.SQL, sqlParameters);
-//		this.getNetwork().removeStopEdges(stopNumber);
-//	}
 
 	public boolean addWay(int startNumber, int endNumber, double km, double timeInMins) {
 		Stop startStop = getNetwork().findStop(startNumber);
@@ -468,13 +430,35 @@ public class TariffZonesModel {
 		}
 		return false;
 	}
+
+	public boolean stopExists(int stopNumber, String stopName) {
+		if (network == null && network.getStops() == null) {
+			return false;
+		}
+		
+		for (Stop stop : network.getStops()) {
+			if (stop.getNumber() == stopNumber || stop.getName().equals(stopName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean wayExists(Stop startStop, Stop endStop) {
+		for (Way way : startStop.getPartOfWays()) {
+			if (way.getStartPoint().equals(endStop) || way.getEndPoint().equals(endStop)) {
+				return true;
+			}
+		}
+		return false;
+	}
 	
 	/**
 	 * Saved stops from unsavedStops and ways from unsavedWays lists to database.
 	 */
 	public boolean saveChangesToDatabase() {
 		try {
-		//save stops
+			//save stops
 			for (Stop stop : getUnsavedStops()) {
 				if (stop.getState() == State.ADDED) {
 					insertStop(getNetwork().getNetworkID(), getNetwork().getCountryID(), stop.getNumber(), stop.getName(), stop.getLatitude(), stop.getLongitude(), stop.getNumberOfCustomers());
@@ -482,7 +466,6 @@ public class TariffZonesModel {
 				else if (stop.getState() == State.MODIFIED) {
 					updateStop(stop.getId(), stop.getNumber(), stop.getName(), stop.getLatitude(), stop.getLongitude(), stop.getNumberOfCustomers());
 				}
-				getUnsavedStops().remove(stop);
 			}
 			
 			//save ways
@@ -507,6 +490,7 @@ public class TariffZonesModel {
 			
 			return true;
 		} catch(Exception e) {
+			e.printStackTrace();
 			return false;
 		}
 	}

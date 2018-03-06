@@ -7,7 +7,7 @@ import org.jxmapviewer.viewer.GeoPosition;
 import tariffzones.tariffzonesprocessor.djikstra.Edge;
 import tariffzones.tariffzonesprocessor.djikstra.Node;
 
-public class Way implements Edge, tariffzones.map.mapComponents.Way, ObjectState {
+public class Way implements Edge, tariffzones.map.painter.Way, ObjectState {
 	private int id;
 	private Stop startPoint, endPoint;
 	private double timeLength = 0;

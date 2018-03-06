@@ -29,11 +29,6 @@ public class AddStopDlg extends JPanel {
 		super();
 		initialize();
 	}
-	
-	public void showDlg() {
-//		this.setModal(true);
-		this.setVisible(true);
-	}
 
 	private void initialize() {
 //		this.setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
@@ -120,10 +115,5 @@ public class AddStopDlg extends JPanel {
 	
 	public void setIconLabelText(String text) {
 		getIconLabel().setText(text);
-	}
-	
-	public static void main(String[] args) {
-		AddStopDlg dlg = new AddStopDlg();
-		dlg.showDlg();
 	}
 }

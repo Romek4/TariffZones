@@ -1,4 +1,4 @@
-package tariffzones.map.mapComponents;
+package tariffzones.map.painter;
 
 import java.awt.BasicStroke;
 import java.awt.Color;

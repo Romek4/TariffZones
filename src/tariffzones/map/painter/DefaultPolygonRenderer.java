@@ -1,4 +1,4 @@
-package tariffzones.map.mapComponents;
+package tariffzones.map.painter;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -31,32 +31,24 @@ public class DefaultPolygonRenderer implements Renderer<Polygon> {
 		GeoPosition north = new GeoPosition(-180, 0);
 		
 		
-		for(GeoPosition gp : polygon.getGeoPositions()) { 
-			if (west.getLongitude() > gp.getLongitude()) {
-				west = gp;
-			}
-			if (east.getLongitude() < gp.getLongitude()) {
-				east = gp;
-			}
-			if (north.getLatitude() < gp.getLatitude()) {
-				north = gp;
-			}
-			if (south.getLatitude() > gp.getLatitude()) {
-				south = gp;
-			}
+		for(GeoPosition gp : polygon.getGeoPositions()) {
+			Point2D pt = null;
+			
+			pt = map.getTileFactory().geoToPixel(gp, map.getZoom());
+			poly.addPoint((int)pt.getX(), (int)pt.getY());
 		}
 		
-		Point2D pt = null, pt2 = null, pt3 = null, pt4 = null;
-		
-		pt = map.getTileFactory().geoToPixel(west, map.getZoom());
-		pt2 = map.getTileFactory().geoToPixel(south, map.getZoom());
-		pt3 = map.getTileFactory().geoToPixel(east, map.getZoom());
-		pt4 = map.getTileFactory().geoToPixel(north, map.getZoom());
-		
-		poly.addPoint((int)pt.getX()-25, (int)pt2.getY()+25); //bottom left corner
-		poly.addPoint((int)pt3.getX()+25, (int)pt2.getY()+25); //bottom right corner
-		poly.addPoint((int)pt3.getX()+25, (int)pt4.getY()-25); //top right corner
-		poly.addPoint((int)pt.getX()-25, (int)pt4.getY()-25); //top left corner
+//		Point2D pt = null, pt2 = null, pt3 = null, pt4 = null;
+//		
+//		pt = map.getTileFactory().geoToPixel(west, map.getZoom());
+//		pt2 = map.getTileFactory().geoToPixel(south, map.getZoom());
+//		pt3 = map.getTileFactory().geoToPixel(east, map.getZoom());
+//		pt4 = map.getTileFactory().geoToPixel(north, map.getZoom());
+//		
+//		poly.addPoint((int)pt.getX()-25, (int)pt2.getY()+25); //bottom left corner
+//		poly.addPoint((int)pt3.getX()+25, (int)pt2.getY()+25); //bottom right corner
+//		poly.addPoint((int)pt3.getX()+25, (int)pt4.getY()-25); //top right corner
+//		poly.addPoint((int)pt.getX()-25, (int)pt4.getY()-25); //top left corner
 		
 //		Point p1 = new Point((int)pt.getX(), (int)pt2.getY());
 //		Point p2 = new Point((int)pt.getX(), (int)pt2.getY());
@@ -85,7 +77,7 @@ public class DefaultPolygonRenderer implements Renderer<Polygon> {
 //			poly.addPoint((int)pt.getX(),(int)pt.getY());
 //		}
 		Color color = polygon.getColor();
-		g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 127));
+		g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 197));
 		g.fill(poly); 
 		g.draw(poly); 
 		

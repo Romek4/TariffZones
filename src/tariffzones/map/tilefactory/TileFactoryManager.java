@@ -1,4 +1,4 @@
-package tariffzones.map;
+package tariffzones.map.tilefactory;
 
 import java.util.List;
 

@@ -18,10 +18,10 @@ public class SQLProcessor {
 	
 	public boolean connectDatabase(String dbUrl, String username, String password) {
 		try {
-			Class.forName(DatabaseConnectionParametres.JDBC_DRIVER);
+//			Class.forName(DatabaseConnectionParametres.JDBC_DRIVER);
 			connection = DriverManager.getConnection(dbUrl, username, password);
 			return true;
-		} catch (SQLException | ClassNotFoundException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 			return false;
 		}

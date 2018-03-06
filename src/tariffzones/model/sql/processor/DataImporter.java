@@ -27,7 +27,7 @@ public class DataImporter {
 
 	public DataImporter() {
 		SQLProcessor mySQLAccess = new SQLProcessor();
-		mySQLAccess.connectDatabase("admin", "admin"); //TODO
+//		mySQLAccess.connectDatabase("admin", "admin"); //TODO
 	}
 	
 	public ArrayList<Node> readStops(String fileName) throws IOException, FileNotFoundException {
@@ -40,6 +40,7 @@ public class DataImporter {
 	        while ((nextLine = csvReader.readNext()) != null) {
 	            if (nextLine != null) {
 	            	Stop stop = new Stop(Integer.parseInt(nextLine[0]), nextLine[1], Integer.parseInt(nextLine[4]), Double.parseDouble(nextLine[2]), Double.parseDouble(nextLine[3]));
+	            	stop.setState(State.ADDED);
 	            	stops.add(stop);
 	            }
 	        }
@@ -65,6 +66,7 @@ public class DataImporter {
 	            	startPoint = findStop(Integer.parseInt(nextLine[0]), busStops);
 	            	endPoint = findStop(Integer.parseInt(nextLine[1]), busStops);
 	            	Way way = new Way(startPoint, endPoint, Double.parseDouble(nextLine[2]), Double.parseDouble(nextLine[3])); //TODO: more attribs for Way
+	            	way.setState(State.ADDED);
 	            	ways.add(way);
 	            }
 	        }

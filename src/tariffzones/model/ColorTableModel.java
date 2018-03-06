@@ -29,7 +29,7 @@ public class ColorTableModel extends AbstractTableModel implements TableModelLis
 	}
 	
 	public Object getValueAt(int row, int col) {
-		System.out.println(data[row][col].toString());
+//		System.out.println(data[row][col].toString());
 		return data[row][col];
 	}
 	
@@ -73,7 +73,7 @@ public class ColorTableModel extends AbstractTableModel implements TableModelLis
 
 	@Override
 	public void tableChanged(TableModelEvent e) {
-		System.out.println(getRowCount());
+//		System.out.println(getRowCount());
 	}
 }
 

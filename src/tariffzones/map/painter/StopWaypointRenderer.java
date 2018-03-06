@@ -1,4 +1,4 @@
-package tariffzones.map.mapComponents;
+package tariffzones.map.painter;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -65,6 +65,10 @@ public class StopWaypointRenderer implements WaypointRenderer<Stop> {
 	
 	public void setColor(Color color) {
 		this.color = color;
+	}
+
+	public int getEllipseDiameter() {
+		return ellipseDiameter;
 	}
 	
 	public void setEllipseDiameter(int ellipseDiameter) {

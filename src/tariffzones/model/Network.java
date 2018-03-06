@@ -2,7 +2,6 @@ package tariffzones.model;
 
 import java.util.ArrayList;
 
-import tariffzones.tariffzonesprocessor.djikstra.Edge;
 import tariffzones.tariffzonesprocessor.djikstra.Node;
 
 public class Network {
@@ -15,6 +14,12 @@ public class Network {
 	private ArrayList<Stop> stops;
 	private ArrayList<Way> ways;
 	
+	public Network(String networkName, String networkType, String countryID) {
+		this.networkName = networkName;
+		this.networkType = networkType;
+		this.countryID = countryID;
+	}
+	
 	public Network(int networkID, String networkName, String networkType, String countryID) {
 		this.networkID = networkID;
 		this.networkName = networkName;
@@ -23,27 +28,6 @@ public class Network {
 	}
 	
 	public boolean addWay(Way way) {
-//		if (ways.findData(wayId) == null) {
-//			BusStop startStop = (BusStop) stops.findData(startNumber).getValue();
-//			BusStop endStop = (BusStop) stops.findData(endNumber).getValue();
-//			
-//			if (startStop == null || endStop == null) {
-//				return false;
-//			}
-//			
-//			ways.insertData(new Record(wayId, new Way(wayId, startStop, endStop, timeInMins)));
-//			return true;
-//		}
-//		return false;
-		
-//		Stop startStop = this.findStop(startNumber);
-//		Stop endStop = this.findStop(endNumber);
-//		
-//		if (startStop == null || endStop == null) {
-//			return false;
-//		}
-		
-//		Way way = new Way(startStop, endStop, km, timeInMins);
 		if (ways.add(way)) {
 			return true;
 		}
@@ -129,6 +113,11 @@ public class Network {
 	public int getNetworkID() {
 		return networkID;
 	}
+	
+	public void setNetworkID(int networkID) {
+		this.networkID = networkID;
+	}
+	
 	
 	public String getNetworkName() {
 		return networkName;

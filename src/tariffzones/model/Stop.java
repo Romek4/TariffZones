@@ -1,6 +1,5 @@
 package tariffzones.model;
 
-import java.awt.Color;
 import java.util.ArrayList;
 
 import org.jxmapviewer.viewer.GeoPosition;
@@ -47,7 +46,6 @@ public class Stop implements Node, Waypoint, ObjectState {
 	}
 	
 	public Stop(int number, String name, int numberOfHabitants, double latitude, double longitude) {
-		this.network = network;
 		this.number = number;
 		this.name = name;
 		this.numberOfCustomers = numberOfHabitants;
@@ -128,6 +126,14 @@ public class Stop implements Node, Waypoint, ObjectState {
 	public void setZone(Zone zone) {
 		this.zone = zone;
 	}
+	
+	public Network getNetwork() {
+		return network;
+	}
+	
+	public void setNetwork(Network network) {
+		this.network = network;
+	}
 
 	@Override
 	public GeoPosition getPosition() {
@@ -146,10 +152,6 @@ public class Stop implements Node, Waypoint, ObjectState {
 			return geoPosition.getLongitude();
 		}
 		return -999999;
-	}
-	
-	public Network getNetwork() {
-		return network;
 	}
 
 	@Override

@@ -91,7 +91,6 @@ public class Djikstra {
             
             if ( min == Double.MAX_VALUE )
             {
-            	//System.err.println("Djikstra -1");
                 return null; // edge does not exist
             }
         }
@@ -102,7 +101,6 @@ public class Djikstra {
             results[1] = countNodesOnPath(startNodeIndex, endNodeIndex, aX);
             return results;
         }
-        //System.err.println("Djikstra -2");
 		return null; //some error
 	}
 	
@@ -118,18 +116,6 @@ public class Djikstra {
 	}
 	
 	public static String matrixToString(double[][] matrix) {
-		String s = "";
-		for (int i = 0; i < matrix.length; i++) {
-			for (int j = 0; j < matrix.length; j++) {
-				s += matrix[i][j] + " ";
-			}
-			s += "\n";
-		}
-		
-		return s;
-	}
-	
-	public static String matrixToString(int[][] matrix) {
 		String s = "";
 		for (int i = 0; i < matrix.length; i++) {
 			for (int j = 0; j < matrix.length; j++) {

@@ -51,7 +51,6 @@ public class MapViewer extends JXMapViewer {
 			
 			@Override
 			public void componentResized(ComponentEvent e) {
-				System.out.println(getHeight());
 				getLatLonLabel().setBounds(getWidth()-255, getHeight()-20, 250, 25);
 			}
 		});
