@@ -33,17 +33,20 @@ public class PainterManager {
 	private List<Painter<JXMapViewer>> painters;
 	
 	StopWaypointRenderer stopWaypointRenderer;
+	StopWaypointRenderer selectedWaypointRenderer;
 	
 	public PainterManager(JXMapViewer map) {
 		this.map = map;
 		
 		waypointPainter = new WaypointPainter<>();
-		waypointPainter.setRenderer(new StopWaypointRenderer(Color.YELLOW));
+		stopWaypointRenderer = new StopWaypointRenderer(Color.YELLOW);
+		stopWaypointRenderer.setEllipseDiameter(10);
+		waypointPainter.setRenderer(stopWaypointRenderer);
 		
 		selectedWaypointPainter = new WaypointPainter<>();
-		stopWaypointRenderer = new StopWaypointRenderer(Color.RED);
-		stopWaypointRenderer.setEllipseDiameter(10);
-		selectedWaypointPainter.setRenderer(stopWaypointRenderer);
+		selectedWaypointRenderer = new StopWaypointRenderer(Color.RED);
+		selectedWaypointRenderer.setEllipseDiameter(20);
+		selectedWaypointPainter.setRenderer(selectedWaypointRenderer);
 		
 		wayPainter = new WayPainter<>();
 		

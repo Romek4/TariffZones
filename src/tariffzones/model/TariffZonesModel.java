@@ -251,17 +251,17 @@ public class TariffZonesModel {
 		}
 	}
 	
-	private void insertWay(Stop startStop, Stop endStop, double distance, double timeLength) {
+	private void insertWay(int networkId, Stop startStop, Stop endStop, double distance, double timeLength) {
 		int startStopId = 0, endStopId = 0;
 		
 		try {
-			sqlProcessor.select("SELECT stop_id from stop where stop_name = '" + startStop.getName() + "'", null);
+			sqlProcessor.select("SELECT stop_id from stop where stop_name = '" + startStop.getName() + "' AND network_id = " + networkId, null);
     	
 			if (sqlProcessor.getResultSet().next()) {
 				startStopId = Integer.parseInt(sqlProcessor.getResultSet().getString("stop_id"));
 			}
 		
-	    	sqlProcessor.select("SELECT stop_id from stop where stop_name = '" + endStop.getName() + "'", null);
+			sqlProcessor.select("SELECT stop_id from stop where stop_name = '" + endStop.getName() + "' AND network_id = " + networkId, null);
 	    	if (sqlProcessor.getResultSet().next()) {
 	    		endStopId = Integer.parseInt(sqlProcessor.getResultSet().getString("stop_id"));
 			}
@@ -327,6 +327,10 @@ public class TariffZonesModel {
 	}
 	
 	public boolean addStop(int stopNumber, String stopName, int numOfHabitants, double latitude, double longitude) {
+		if (getNetwork() == null) {
+			return false;
+		}
+		
 		if (getNetwork().addStop(new Stop(network, stopNumber, stopName, numOfHabitants, latitude, longitude))) {
 			return true;
 		}
@@ -334,6 +338,10 @@ public class TariffZonesModel {
 	}
 	
 	public boolean addStop(int id, int stopNumber, String stopName, int numOfHabitants, double latitude, double longitude) {
+		if (getNetwork() == null) {
+			return false;
+		}
+		
 		if (getNetwork().addStop(new Stop(id, network, stopNumber, stopName, numOfHabitants, latitude, longitude))) {
 			return true;
 		}
@@ -343,13 +351,17 @@ public class TariffZonesModel {
 	public boolean addAndRememberStop(int stopNumber, String stopName, int numOfHabitants, double latitude, double longitude) {
 		Stop stop = new Stop(network, stopNumber, stopName, numOfHabitants, latitude, longitude);
 		stop.setState(State.ADDED);
-		if (getNetwork().addStop(stop) && getUnsavedStops().add(stop)) {
+		if (getNetwork() != null && getNetwork().addStop(stop) && getUnsavedStops().add(stop)) {
 			return true;
 		}
 		return false;
 	}
 	
 	public boolean removeAndRememberStop(Stop stop) {
+		if (getNetwork() == null) {
+			return false;
+		}
+		
 		if (stop != null) {
 			if (getUnsavedStops().contains(stop)) {
 				getUnsavedStops().remove(stop);
@@ -395,6 +407,10 @@ public class TariffZonesModel {
 	}
 
 	public boolean removeAndRememberWay(Way way) {
+		if (getNetwork() == null) {
+			return false;
+		}
+		
 		if (way != null) {
 			if (getUnsavedWays().contains(way)) {
 				getUnsavedWays().remove(way);
@@ -421,6 +437,10 @@ public class TariffZonesModel {
 	}
 
 	public boolean addAndRememberWay(Stop startStop, Stop endStop, double wayLength, double wayTimeLength) {
+		if (getNetwork() == null) {
+			return false;
+		}
+		
 		Way way = new Way(startStop, endStop, wayLength, wayTimeLength);
 		way.setState(State.ADDED);
 		if (getNetwork().addWay(way) && getUnsavedWays().add(way)) {
@@ -457,6 +477,10 @@ public class TariffZonesModel {
 	 * Saved stops from unsavedStops and ways from unsavedWays lists to database.
 	 */
 	public boolean saveChangesToDatabase() {
+		if (getNetwork() == null) {
+			return false;
+		}
+		
 		try {
 			//save stops
 			for (Stop stop : getUnsavedStops()) {
@@ -471,7 +495,7 @@ public class TariffZonesModel {
 			//save ways
 			for (Way way : getUnsavedWays()) {
 				if (way.getState() == State.ADDED) {
-					insertWay(way.getStartPoint(), way.getEndPoint(), way.getDistance(), way.getTimeLength());
+					insertWay(getNetwork().getNetworkID(), way.getStartPoint(), way.getEndPoint(), way.getDistance(), way.getTimeLength());
 				}
 				else if (way.getState() == State.MODIFIED) {
 					updateWay(way.getStartPoint(), way.getEndPoint(), way.getDistance(), way.getTimeLength());
@@ -518,10 +542,16 @@ public class TariffZonesModel {
 	}
 	
 	public ArrayList getNetworkStops() {
+		if (getNetwork() == null) {
+			return null;
+		}
 		return this.getNetwork().getStops();
 	}
 	
 	public ArrayList getNetworkWays() {
+		if (getNetwork() == null) {
+			return null;
+		}
 		return this.getNetwork().getWays();
 	}
 	
@@ -533,8 +563,10 @@ public class TariffZonesModel {
 	}
 
 	public void resetLists() {
-		getNetwork().setStops(new ArrayList<>());
-		getNetwork().setWays(new ArrayList<>());
+		if (getNetwork() != null) {
+			getNetwork().setStops(new ArrayList<>());
+			getNetwork().setWays(new ArrayList<>());
+		}
 		unsavedStops = null;
 		unsavedWays = null;
 	}
@@ -542,7 +574,7 @@ public class TariffZonesModel {
 	public Network getNetwork() {
 		if (network == null) {
 			//dummy network
-			network = new Network(0, "", "", "");
+//			network = new Network(0, "", "", "");
 		}
 		return network;
 	}

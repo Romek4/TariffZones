@@ -8,8 +8,11 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.List;
 
+import javax.imageio.ImageIO;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -108,14 +111,32 @@ public class OpenNetworkFromFilesDlg extends JPanel {
 
 	private JButton getWaysBtn() {
 		if (waysBtn == null) {
-			waysBtn = new JButton("Browse");
+			try {
+				waysBtn = new JButton();
+				waysBtn.setSize(new Dimension(24, 24));
+				waysBtn.setContentAreaFilled(false);
+				Image img = ImageIO.read(new FileInputStream("resources/images/browseFoldersIcon.png"));
+				waysBtn.setIcon(new ImageIcon(img.getScaledInstance(waysBtn.getWidth(), waysBtn.getHeight(), Image.SCALE_SMOOTH)));
+				waysBtn.setToolTipText("Solve tariff zones problem for current network");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		return waysBtn;
 	}
 
 	private JButton getStopsBtn() {
 		if (stopsBtn == null) {
-			stopsBtn = new JButton("Browse");
+			try {
+				stopsBtn = new JButton();
+				stopsBtn.setSize(new Dimension(24, 24));
+				stopsBtn.setContentAreaFilled(false);
+				Image img = ImageIO.read(new FileInputStream("resources/images/browseFoldersIcon.png"));
+				stopsBtn.setIcon(new ImageIcon(img.getScaledInstance(stopsBtn.getWidth(), stopsBtn.getHeight(), Image.SCALE_SMOOTH)));
+				stopsBtn.setToolTipText("Solve tariff zones problem for current network");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 		return stopsBtn;
 	}

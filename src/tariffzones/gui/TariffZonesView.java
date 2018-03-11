@@ -6,9 +6,13 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Image;
+import java.awt.LayoutManager;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -21,11 +25,14 @@ import java.io.IOException;
 import java.util.List;
 
 import javax.imageio.ImageIO;
+import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
+import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -57,24 +64,32 @@ import tariffzones.map.MapViewer;
 import tariffzones.model.Network;
 import tariffzones.model.StopTableModel;
 import tariffzones.model.WayTableModel;
+import tariffzones.model.ZoneTableModel;
+import tariffzones.tariffzonesprocessor.greedy.Zone;
 
 public class TariffZonesView extends JFrame {
 	
 	private final String STOPS = "Stops";
 	private final String WAYS = "Ways";
 	
-	private JPanel toolBoxPanel, tablePanel;
+	private MapToolboxPl mapToolboxPl;
+	private JInternalFrame zoneIF;
+	private JPanel toolBoxPanel;
+	private JPanel tablePanel;
+	
 	private JLabel infoLabel;
 	
 	private JXMapViewer mapViewer;
-	private JTable stopTable, wayTable;
+	
+	private JTable zoneTable;
+	private JTable stopTable;
+	private JTable wayTable;
+	
 	private JComboBox citiesCb;
 	private JComboBox stopCb;
 	private JComboBox wayCb;
 	
 	private JComboBox tileServersCb;
-	
-	private ButtonPl buttonPl;
 	
 	private JButton loadBtn;
 	private JButton connectToDBBtn;
@@ -85,13 +100,10 @@ public class TariffZonesView extends JFrame {
 	
 	private JMenuItem stopEditMenuItem;  
 	private JMenuItem stopDeleteMenuItem;
-	
 	private JMenuItem wayEditMenuItem;  
 	private JMenuItem wayDeleteMenuItem;
-	
 	private JMenuItem deleteFromStopTableMenuItem;
 	private JMenuItem deleteFromWayTableMenuItem;
-	
 	private JMenuItem exportStopsToCSVMenuItem;
 	private JMenuItem exportWaysToCSVMenuItem;
 	
@@ -99,8 +111,6 @@ public class TariffZonesView extends JFrame {
 	private JPopupMenu wayMapPopupMenu;
 	private JPopupMenu stopTablePopupMenu;
 	private JPopupMenu wayTablePopupMenu;
-	
-	private MapToolboxPl mapToolboxPl;
 	
 	private TableRowSorter<TableModel> sorter;
 	
@@ -118,6 +128,7 @@ public class TariffZonesView extends JFrame {
 	private MouseMotionListener mapViewerMouseMotionListener;
 	private ActionListener actionListener;
 	private KeyListener keyListener;
+	private ComponentListener mapViewerComponentListener;
 	
 	private static final String DEFAULT_INFO_MSG = "Use wheel for zoom. Drag left mouse button to move.";
 	private static final String MAKEPOINT_INFO_MSG = "Use left mouse button to point on the map.";
@@ -130,6 +141,8 @@ public class TariffZonesView extends JFrame {
 		this.setLayout(new GridBagLayout());
 		this.setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 		this.setTitle("Tariff Zones Problem Solver");
+		this.setMinimumSize(new Dimension(500, 350));
+		this.setPreferredSize(new Dimension(1000, 650));
 		
 //		try {
 //			UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
@@ -209,11 +222,14 @@ public class TariffZonesView extends JFrame {
 		mapViewerConstraints.fill = GridBagConstraints.BOTH;
 		rightPanel.add(getMapViewer(), mapViewerConstraints);
 	
-		getMapToolboxPl().setBounds(10, 10, 250, 50);
+		getMapToolboxPl().setBounds(10, 10, 150, 20);
 		getMapViewer().add(getMapToolboxPl());
 		
-		getTileServersCb().setBounds(300, 10, 200, 50);
+		getTileServersCb().setBounds(170, 10, 150, 20);
 		getMapViewer().add(getTileServersCb());
+		
+		getZoneIF().setBounds(10, 100, 450, 250);
+		getMapViewer().add(getZoneIF());
 		
 		//InfoPanel - bottom
 		JPanel infoPanel = new JPanel();
@@ -234,7 +250,7 @@ public class TariffZonesView extends JFrame {
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
 				leftPanel, rightPanel);
 		splitPane.setOneTouchExpandable(true);
-		splitPane.setResizeWeight(0.05);
+		splitPane.setResizeWeight(0.1);
 		GridBagConstraints splitPaneGbc = new GridBagConstraints();
 		splitPaneGbc.gridx = 1;
 		splitPaneGbc.gridy = 1;
@@ -480,7 +496,7 @@ public class TariffZonesView extends JFrame {
 		return mapViewerMouseListener;
 	}
 	
-	private MouseMotionListener getMapViewerMousemotionListener() {
+	private MouseMotionListener getMapViewerMouseMotionListener() {
 		if (mapViewerMouseMotionListener == null) {
 			mapViewerMouseMotionListener = new MouseAdapter() {
 				
@@ -493,6 +509,28 @@ public class TariffZonesView extends JFrame {
 			};
 		}
 		return mapViewerMouseMotionListener;
+	}
+	
+	private ComponentListener getMapViewerComponentListener() {
+		if (mapViewerComponentListener == null) {
+			mapViewerComponentListener = new ComponentAdapter() {
+				
+				@Override
+				public void componentResized(ComponentEvent e) {
+
+					int mapViewerWidth = getMapViewer().getWidth();
+					int mapViewerHeigth = getMapViewer().getHeight();
+					
+					getMapToolboxPl().setBounds(10, 10, mapViewerWidth/4, 50);
+					getTileServersCb().setBounds(mapViewerWidth/4 + 20, 10, mapViewerWidth/4, 50);
+					getZoneIF().setBounds(mapViewerWidth - mapViewerWidth/4 - 20, 10, mapViewerWidth/4, mapViewerHeigth/4);
+					
+					repaint();
+					
+			    }
+			};
+		}
+		return mapViewerComponentListener;
 	}
 	
 	private ActionListener getActionListener() {
@@ -597,6 +635,14 @@ public class TariffZonesView extends JFrame {
 					else if(e.getSource().equals(getSaveBtn())) {
 						if (getController().saveChangesToDatabase()) {
 							refreshCitiesCb();
+							for (Object o : getCitiesCb().getSelectedObjects()) {
+								Network network = (Network) o;
+								if (network.getNetworkName().equals(getController().getLastInsertedNetworkName())) {
+									getCitiesCb().setSelectedItem(network);
+								}
+							}
+							getController().addStopsInNetworkToMap(getController().getLastInsertedNetworkName());
+							getController().addWaysBetweenStopsInCityToMap(getController().getLastInsertedNetworkName());
 							getController().clearUnsaved();
 							getController().updateBtns();
 							JOptionPane.showMessageDialog(getContentPane(), "Data saved.", "Save Data To Database", JOptionPane.INFORMATION_MESSAGE);
@@ -737,6 +783,10 @@ public class TariffZonesView extends JFrame {
 							getController().highligthWays(((WayTableModel)getWayTable().getModel()).getWaysAt(selectedRows), Color.RED);
 						}
 					}
+					else if (e.getSource().equals(getZoneTable().getSelectionModel())) {
+						Zone zone = (Zone) ((ZoneTableModel)getZoneTable().getModel()).getValueAt(getZoneTable().getSelectedRow(), 0);
+						getController().highligthStops(zone.getStopsInZone(), Color.RED);
+					}
 				}
 			};
 		}
@@ -760,8 +810,9 @@ public class TariffZonesView extends JFrame {
 	}
 	
 	public void registryListeners() {
+		getMapViewer().addComponentListener(getMapViewerComponentListener());
 		getMapViewer().addMouseListener(getMouseListener());
-		getMapViewer().addMouseMotionListener(getMapViewerMousemotionListener());
+		getMapViewer().addMouseMotionListener(getMapViewerMouseMotionListener());
 		getLoadBtn().addActionListener(getActionListener());
 		getStopCb().addActionListener(getActionListener());
 		getWayCb().addActionListener(getActionListener());
@@ -787,13 +838,15 @@ public class TariffZonesView extends JFrame {
 		getWayTable().getSelectionModel().addListSelectionListener(getListSelectionListener());
 		getStopTable().addMouseListener(getMouseListener());
 		getWayTable().addMouseListener(getMouseListener());
+		getZoneTable().getSelectionModel().addListSelectionListener(getListSelectionListener());
 		getAddStopBtn().addKeyListener(getKeyListener());
 		getAddWayBtn().addKeyListener(getKeyListener());
 	}
 	
 	public void unregistryListeners() {
+		getMapViewer().removeComponentListener(getMapViewerComponentListener());
 		getMapViewer().removeMouseListener(getMouseListener());
-		getMapViewer().removeMouseMotionListener(getMapViewerMousemotionListener());
+		getMapViewer().removeMouseMotionListener(getMapViewerMouseMotionListener());
 		getLoadBtn().removeActionListener(getActionListener());
 		getStopCb().removeActionListener(getActionListener());
 		getWayCb().removeActionListener(getActionListener());
@@ -819,6 +872,7 @@ public class TariffZonesView extends JFrame {
 		getWayTable().getSelectionModel().removeListSelectionListener(getListSelectionListener());
 		getStopTable().removeMouseListener(getMouseListener());
 		getWayTable().removeMouseListener(getMouseListener());
+		getZoneTable().getSelectionModel().removeListSelectionListener(getListSelectionListener());
 		getAddStopBtn().removeKeyListener(getKeyListener());
 		getAddWayBtn().removeKeyListener(getKeyListener());
 	}
@@ -869,6 +923,13 @@ public class TariffZonesView extends JFrame {
 			}
 		}
 		return connectToDBBtn;
+	}
+	
+	public JComboBox getCitiesCb() {
+		if (citiesCb == null) {
+			citiesCb = new JComboBox<>();
+		}
+		return citiesCb;
 	}
 
 	public JComboBox getWayCb() {
@@ -924,7 +985,7 @@ public class TariffZonesView extends JFrame {
 	public JXMapViewer getMapViewer() {
 		if (mapViewer == null) {
 			mapViewer = new MapViewer();
-
+			
 			// Create a TileFactoryInfo for OpenStreetMap
 			TileFactoryInfo info = new OSMTileFactoryInfo();
 			DefaultTileFactory tileFactory = new DefaultTileFactory(info);
@@ -1138,11 +1199,21 @@ public class TariffZonesView extends JFrame {
 		return wayTable;
 	}
 	
-	public JComboBox getCitiesCb() {
-		if (citiesCb == null) {
-			citiesCb = new JComboBox<>();
+	public JInternalFrame getZoneIF() {
+		if (zoneIF == null) {
+			zoneIF = new JInternalFrame("Zones Created");
+			zoneIF.setResizable(true);
+			zoneIF.add(new JScrollPane(getZoneTable()));
+			zoneIF.setVisible(false);
 		}
-		return citiesCb;
+		return zoneIF;
+	}
+	
+	public JTable getZoneTable() {
+		if (zoneTable == null) {
+			zoneTable = new JTable();
+		}
+		return zoneTable;
 	}
 	
 	public TariffZonesController getController() {

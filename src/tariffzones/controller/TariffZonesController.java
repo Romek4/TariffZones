@@ -36,6 +36,7 @@ import tariffzones.gui.ColorZoneChooserPl;
 import tariffzones.gui.ConnectionDlg;
 import tariffzones.gui.OpenNetworkFromFilesDlg;
 import tariffzones.gui.TariffZonesView;
+import tariffzones.gui.ZoneInfoPl;
 import tariffzones.map.MapViewer;
 import tariffzones.map.painter.StopWaypointRenderer;
 import tariffzones.map.tilefactory.DefaultTileFactory;
@@ -51,6 +52,8 @@ import tariffzones.model.State;
 import tariffzones.model.TariffZonesModel;
 import tariffzones.model.Way;
 import tariffzones.model.WayTableModel;
+import tariffzones.model.ZoneCellRenderer;
+import tariffzones.model.ZoneTableModel;
 import tariffzones.model.sql.interfaces.DatabaseConnectionParametres;
 import tariffzones.tariffzonesprocessor.greedy.TariffZonesProblemSolver;
 import tariffzones.tariffzonesprocessor.greedy.Zone;
@@ -60,11 +63,11 @@ public class TariffZonesController {
 	private TariffZonesView view;
 	private PainterManager painterManager;
 	private TileFactoryManager tileFactoryManager;
-	private Network loadedNetwork;
 	private Stop lastPickedStop;
 	private Way lastPickedWay;
 	
 	private boolean connectedToDB = false;
+	private String insertedNetworkName;
 
 	private final String IC_NETWORK_TYPE = "IC";
 	private final String OC_NETWORK_TYPE = "OC";
@@ -140,8 +143,11 @@ public class TariffZonesController {
 		
 		painterManager.getPolygonPainter().setPolygons(new HashSet<>(zones));
 		painterManager.repaintPainters();
+		
+		fillTableWithZones(view.getZoneTable(), zones);
+		view.getZoneIF().setVisible(true);
 	}
-	
+
 	public void addStopsInNetworkToMap(String networkName) {
 		//reset
 		painterManager = new PainterManager(view.getMapViewer());
@@ -171,10 +177,16 @@ public class TariffZonesController {
 				view.getMapViewer().setZoom(9);
 			}
 			
+			if (view.getStopCb().getSelectedItem().toString().equals("Stops")) {
+				fillTableWithStops(view.getStopTable(), model.getNetworkStops());
+			}			
+			if (view.getWayCb().getSelectedItem().toString().equals("Stops")) {
+				fillTableWithStops(view.getWayTable(), model.getNetworkStops());
+			}
+			
 			painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
 			painterManager.repaintPainters();
 			updateBtns();
-			updateTables();
 			
 		} catch (SQLException e) {
 			System.err.println(this.getClass().getName() + " addStopsInNetworkToMap method " + e);
@@ -197,8 +209,15 @@ public class TariffZonesController {
 						resultSet.getDouble("time_length"));
 			}
 			
+			if (view.getStopCb().getSelectedItem().toString().equals("Ways")) {
+				fillTableWithWays(view.getStopTable(), model.getNetworkWays());
+			}			
+			if (view.getWayCb().getSelectedItem().toString().equals("Ways")) {
+				fillTableWithWays(view.getWayTable(), model.getNetworkWays());
+			}
+			
 			painterManager.getWayPainter().setWays(new HashSet<>(model.getNetworkWays()));
-			updateTables();
+			updateBtns();
 			
 		} catch (SQLException e) {
 			System.err.println(this.getClass().getName() + " addWaysBetweenStopsInCityToMap method " + e);
@@ -542,15 +561,16 @@ public class TariffZonesController {
 	}
 	
 	public boolean saveChangesToDatabase() {
-		//if we have just dummy network
-		if (model.getNetwork() != null && model.getNetwork().getNetworkID() < 1) {
-			//if user is not connected do database
-			if (!connectedToDB) {
-				if (!connectToDB()) {
-					return false;
-				}
+		//if user is not connected do database
+		if (!connectedToDB) {
+			if (!connectToDB()) {
+				return false;
 			}
-			
+		}
+		
+		//if we have dummy network
+		if (model.getNetwork() != null && model.getNetwork().getNetworkID() < 1) {
+
 			//open add network dialog and save data
 			if (addNetwork()) {
 				Network network = model.getNetwork();
@@ -560,7 +580,11 @@ public class TariffZonesController {
 			return false;
 		}
 		//if user is connected to database and is working with existing networks
-		else {
+		else { //TODO:
+//			int option = JOptionPane.showConfirmDialog(view.getRootPane(), "", "Add Network", JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE);
+//	        if (option == 2 || option == -1) {
+//	            return false;
+//	        }
 			return model.saveChangesToDatabase();
 		}
 	}
@@ -586,6 +610,7 @@ public class TariffZonesController {
 		
 		try {
 			model.insertNetwork(networkName, networkType, countryId);
+			insertedNetworkName = networkName;
 			return true;
 		} catch(Exception e) {
 			JOptionPane.showMessageDialog(view.getMapViewer(), e.getMessage(), "Add Network", JOptionPane.ERROR_MESSAGE);
@@ -645,6 +670,26 @@ public class TariffZonesController {
 			}
 		});
 	}
+	
+	public void fillTableWithZones(JTable table, ArrayList<Zone> list) {
+		if (list == null) {
+			return;
+		}
+		
+		ZoneTableModel zoneTableModel = new ZoneTableModel(list);
+		table.setModel(zoneTableModel);
+		table.setDefaultRenderer(Zone.class, new ZoneCellRenderer());
+		table.setRowHeight(50);
+//		table.getModel().addTableModelListener(new TableModelListener() {
+//			
+//			@Override
+//			public void tableChanged(TableModelEvent e) {
+//				if (e.getType() == TableModelEvent.UPDATE) {
+//					Zone stop = (Zone) list.get(e.getFirstRow());
+//				}
+//			}
+//		});
+	}
 
 	public boolean checkForStopAndShowTooltip(Point point) {
 		Stop stop = checkMousePositionForStop(point);
@@ -692,7 +737,7 @@ public class TariffZonesController {
 	}
 	
 	public Stop checkMousePositionForStop(Point point) {
-		if (model.getNetwork().getStops() == null) {
+		if (model.getNetwork() == null || model.getNetwork().getStops() == null) {
 			return null;
 		}
 		
@@ -719,7 +764,7 @@ public class TariffZonesController {
 	}
 
 	public int getClickedStopIndex(Point point) {
-		if (model.getNetwork().getStops() == null) {
+		if (model.getNetwork() == null || model.getNetwork().getStops() == null) {
 			return -1;
 		}
 		
@@ -735,7 +780,7 @@ public class TariffZonesController {
 	}
 	
 	public Way checkMousePositionForWay(Point point) {
-		if (model.getNetwork().getWays() == null) {
+		if (model.getNetwork() == null || model.getNetwork().getWays() == null) {
 			return null;
 		}
 		
@@ -753,7 +798,7 @@ public class TariffZonesController {
 	}
 	
 	public int getClickedWayIndex(Point point) {
-		if (model.getNetwork().getWays() == null) {
+		if (model.getNetwork() == null || model.getNetwork().getWays() == null) {
 			return -1;
 		}
 		
@@ -936,11 +981,8 @@ public class TariffZonesController {
 		this.view = tariffZonesView;
 	}
 
-	public String getLoadedNetworkName() {
-		if (model.getNetwork() != null) {
-			return model.getNetwork().getNetworkName();
-		}
-		return null;
+	public String getLastInsertedNetworkName() {
+		return insertedNetworkName;
 	}
 
 	public Stop getLastPickedStop() {
