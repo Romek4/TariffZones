@@ -18,25 +18,72 @@ import java.util.List;
 import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.viewer.GeoPosition;
 
-public class DefaultPolygonRenderer implements Renderer<Polygon> {
+import tariffzones.model.Stop;
+import tariffzones.tariffzonesprocessor.greedy.ConcaveHull;
+import tariffzones.tariffzonesprocessor.greedy.GrahamScan;
+import tariffzones.tariffzonesprocessor.greedy.QuickHull;
+import tariffzones.tariffzonesprocessor.greedy.Zone;
+import voronoi.Edge;
+import voronoi.Site;
+
+public class DefaultPolygonRenderer implements Renderer<Zone> {
 
 	@Override
-	public void paintO(Graphics2D g, JXMapViewer map, Polygon polygon) {
+	public void paintO(Graphics2D g, JXMapViewer map, Zone zone) {
 	
 		java.awt.Polygon poly = new java.awt.Polygon();
 		
-		GeoPosition west = new GeoPosition(0, 180);
-		GeoPosition east = new GeoPosition(0, -180);
-		GeoPosition south = new GeoPosition(180, 0);
-		GeoPosition north = new GeoPosition(-180, 0);
+		GrahamScan hull = new GrahamScan();
 		
+		ArrayList<GeoPosition> points;
 		
-		for(GeoPosition gp : polygon.getGeoPositions()) {
+		for(GeoPosition gp : zone.getGeoPositions()) {
 			Point2D pt = null;
 			
 			pt = map.getTileFactory().geoToPixel(gp, map.getZoom());
 			poly.addPoint((int)pt.getX(), (int)pt.getY());
 		}
+		
+//		for (Stop stop : zone.getStopsInZone()) {
+//			points = new ArrayList<>();
+//			poly = new java.awt.Polygon();
+//			
+//			for (Site site : stop.getRegionSites()) {
+//				points.add(new GeoPosition(site.getX(), site.getY()));
+//			}
+//			
+//			if (points.size() > 2) {
+//				for (GeoPosition geoPosition : hull.getConvexHull(points)) {
+//
+//					Point2D p = map.getTileFactory().geoToPixel(new GeoPosition(geoPosition.getLatitude(), geoPosition.getLongitude()), map.getZoom());
+//					poly.addPoint((int)p.getX(), (int)p.getY());
+//					
+//				}
+//				
+//				Color color = zone.getColor();
+//				g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 197));
+//				g.fill(poly); 
+//				g.draw(poly); 
+		
+			Color color = zone.getColor();
+			g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 197));
+			g.fill(poly); 
+			g.draw(poly);
+//			}
+		}
+		
+//		GeoPosition west = new GeoPosition(0, 180);
+//		GeoPosition east = new GeoPosition(0, -180);
+//		GeoPosition south = new GeoPosition(180, 0);
+//		GeoPosition north = new GeoPosition(-180, 0);
+//		
+//		
+//		for(GeoPosition gp : polygon.getGeoPositions()) {
+//			Point2D pt = null;
+//			
+//			pt = map.getTileFactory().geoToPixel(gp, map.getZoom());
+//			poly.addPoint((int)pt.getX(), (int)pt.getY());
+//		}
 		
 //		Point2D pt = null, pt2 = null, pt3 = null, pt4 = null;
 //		
@@ -76,12 +123,8 @@ public class DefaultPolygonRenderer implements Renderer<Polygon> {
 //			pt = map.getTileFactory().geoToPixel(north, map.getZoom());
 //			poly.addPoint((int)pt.getX(),(int)pt.getY());
 //		}
-		Color color = polygon.getColor();
-		g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 197));
-		g.fill(poly); 
-		g.draw(poly); 
 		
-	}
+//	}
 	
 	private void sortGeoPositions(ArrayList<GeoPosition> geoPositions) {
 		GeoPosition west = new GeoPosition(180, 180);

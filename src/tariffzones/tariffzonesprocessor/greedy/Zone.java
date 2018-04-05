@@ -9,9 +9,9 @@ import tariffzones.map.painter.Polygon;
 import tariffzones.model.Stop;
 import tariffzones.model.Way;
 
-public class Zone implements Polygon {
+public class Zone {
 	private double e;
-	private ArrayList<Stop> stopsInZone, stopsConnectedWithZone;
+	private ArrayList<Stop> stopsInZone, stopsConnectedWithZone, waysInZone;
 	private ArrayList<GeoPosition> geoPositions;
 	private Color color;
 	
@@ -23,18 +23,6 @@ public class Zone implements Polygon {
 		e = stopsInZone.get(0).getNumberOfCustomers();
 	}
 	
-	public double getE() {
-		return this.e;
-	}
-	
-	public void setE(double e) {
-		this.e = e;
-	}
-	
-	public ArrayList<Stop> getStopsInZone() {
-		return this.stopsInZone;
-	}
-	
 	public void addStop(Stop busStop) {
 		if (stopsInZone == null) {
 			stopsInZone = new ArrayList<>();
@@ -42,7 +30,7 @@ public class Zone implements Polygon {
 		
 		busStop.setZone(this);
 		stopsInZone.add(busStop);
-		getGeoPositions().add(busStop.getPosition());
+//		getGeoPositions().add(busStop.getPosition());
 		
 		if (getStopsConnectedWithZoneList().contains(busStop)) {
 			getStopsConnectedWithZoneList().remove(busStop);
@@ -76,15 +64,15 @@ public class Zone implements Polygon {
 		return stopsConnectedWithZone;
 	}
 
-	@Override
-	public ArrayList<GeoPosition> getGeoPositions() {
-		if (geoPositions == null) {
-			geoPositions = new ArrayList<>();
-		}
-		return geoPositions;
-	}
-
-	@Override
+//	@Override
+//	public ArrayList<GeoPosition> getGeoPositions() {
+//		if (geoPositions == null) {
+//			geoPositions = new ArrayList<>();
+//		}
+//		return geoPositions;
+//	}
+//
+//	@Override
 	public Color getColor() {
 		return color;
 	}
@@ -146,10 +134,44 @@ public class Zone implements Polygon {
 		}
 		
 		ConcaveHull hull = new ConcaveHull();
-		geoPositions = hull.calculateConcaveHull(geoPositions, 5);
+		geoPositions = hull.calculateConcaveHull(geoPositions, 15);
 		
 	}
-	
-	
 
+	public ArrayList<GeoPosition> getGeoPositions() {
+		if (geoPositions == null) {
+			geoPositions = new ArrayList<>();
+		}
+		return geoPositions;
+	}
+
+	public ArrayList<Way> getWaysInZone() { //TODO: not to always recalculate it
+		ArrayList<Way> ways = new ArrayList<>();
+		
+		for (Stop stop : getStopsInZone()) {
+			for (Way way : stop.getPartOfWays()) {
+				if (getStopsInZone().contains(way.getStartPoint())
+						&& getStopsInZone().contains(way.getEndPoint())
+						&& !ways.contains(way)) {
+					
+					ways.add(way);
+				}
+			}
+		}
+		
+		return ways;
+	}
+	
+	public double getE() {
+		return this.e;
+	}
+	
+	public void setE(double e) {
+		this.e = e;
+	}
+	
+	public ArrayList<Stop> getStopsInZone() {
+		return this.stopsInZone;
+	}
+	
 }

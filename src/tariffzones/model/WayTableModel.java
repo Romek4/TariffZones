@@ -30,7 +30,7 @@ public class WayTableModel extends AbstractTableModel {
     }
 
 	public Class getColumnClass(int c) {
-		if (data == null) {
+		if (data == null || data.isEmpty()) {
 			return null;
 		}
 		
@@ -56,7 +56,7 @@ public class WayTableModel extends AbstractTableModel {
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		if (data == null) {
+		if (data == null || data.isEmpty()) {
 			return null;
 		}
 		
@@ -71,7 +71,7 @@ public class WayTableModel extends AbstractTableModel {
 	}
 	
 	public Way getWayAt(int rowIndex) {
-		if (data == null) {
+		if (data == null || data.isEmpty()) {
 			return null;
 		}
 		
@@ -91,7 +91,7 @@ public class WayTableModel extends AbstractTableModel {
 	
 	@Override
 	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-		if (data == null) {
+		if (data == null || data.isEmpty()) {
 			return;
 		}
 		
@@ -106,5 +106,13 @@ public class WayTableModel extends AbstractTableModel {
 				break;
 		}
 		fireTableDataChanged();
+	}
+	
+	public List<Way> getData() {
+		return data;
+	}
+	
+	public void setData(List<Way> data) {
+		this.data = data;
 	}
 }

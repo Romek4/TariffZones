@@ -13,9 +13,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -36,9 +36,8 @@ import tariffzones.gui.ColorZoneChooserPl;
 import tariffzones.gui.ConnectionDlg;
 import tariffzones.gui.OpenNetworkFromFilesDlg;
 import tariffzones.gui.TariffZonesView;
-import tariffzones.gui.ZoneInfoPl;
 import tariffzones.map.MapViewer;
-import tariffzones.map.painter.StopWaypointRenderer;
+import tariffzones.map.painter.VoronoiEdgePainter;
 import tariffzones.map.tilefactory.DefaultTileFactory;
 import tariffzones.map.tilefactory.TileFactoryManager;
 import tariffzones.map.tilefactory.tilefactoryinfo.LandscapeTileFactoryInfo;
@@ -54,9 +53,11 @@ import tariffzones.model.Way;
 import tariffzones.model.WayTableModel;
 import tariffzones.model.ZoneCellRenderer;
 import tariffzones.model.ZoneTableModel;
-import tariffzones.model.sql.interfaces.DatabaseConnectionParametres;
+import tariffzones.tariffzonesprocessor.greedy.QuickHull;
 import tariffzones.tariffzonesprocessor.greedy.TariffZonesProblemSolver;
 import tariffzones.tariffzonesprocessor.greedy.Zone;
+import voronoi.Edge;
+import voronoi.Voronoi;
 
 public class TariffZonesController {
 	private TariffZonesModel model;
@@ -118,6 +119,8 @@ public class TariffZonesController {
 		boolean useNumberOfHabs = dlg.getUseNumberOfHabitantsChb().isSelected();
 		boolean useTimeLength = dlg.getUseTimeLengthRb().isSelected(); //if false, then dlg.getUseDistanceRb().isSelected() is true
 		
+		model.runDjikstra();
+		
 		TariffZonesProblemSolver solver = new TariffZonesProblemSolver();
 		if (useOnlyNumberOfHabs) {
 			solver.runGreedyAlgorithm(model.getNetworkStops(), numberOfZones, model.getDistanceMatrix(), useOnlyNumberOfHabs, true);
@@ -130,10 +133,43 @@ public class TariffZonesController {
 				Way.PRICE_VALUE = Way.DISTANCE;
 			}
 			
-			model.runDjikstra();
 			solver.runGreedyAlgorithm(model.getNetworkStops(), numberOfZones, model.getDistanceMatrix(), useOnlyNumberOfHabs, useNumberOfHabs);
 		}
+		
+		GeoPosition west = new GeoPosition(0, 180);
+		GeoPosition east = new GeoPosition(0, -180);
+		GeoPosition north = new GeoPosition(180, 0);
+		GeoPosition south = new GeoPosition(-180, 0);
+		
+		double westBorder = 180; //max longitude
+		double eastBorder = 0; //min longitude
+		double northBorder = 0; //min latitude
+		double southBorder = 90; //max latitude
+		
+		for(Object o : model.getNetworkStops()) {
+			Stop stop = (Stop) o;
+			if (westBorder > stop.getLongitude()) {
+				westBorder = stop.getLongitude();
+			}
+			if (eastBorder < stop.getLongitude()) {
+				eastBorder = stop.getLongitude();
+			}
+			if (northBorder < stop.getLatitude()) {
+				northBorder = stop.getLatitude();
+			}
+			if (southBorder > stop.getLatitude()) {
+				southBorder = stop.getLatitude();
+			}
+		}
+		
+		
+		Voronoi voronoi = new Voronoi(model.getNetworkStops(), westBorder, eastBorder, northBorder, southBorder);
+		
+//		List<VoronoiRegion> regions = voronoi.getRegions();
+//		painterManager.addVoronoiEdgePainter(new VoronoiEdgePainter((ArrayList<Edge>) voronoi.generateVoronoi()));
         
+//		voronoi.generateVoronoi();
+		
 		ArrayList<Zone> zones = solver.getZones();
 		for (int i = 0; i < zones.size(); i++) {
 			painterManager.addZoneWaypointPainter(zones.get(i).getStopsInZone(), colorList.get(i));
@@ -144,8 +180,8 @@ public class TariffZonesController {
 		painterManager.getPolygonPainter().setPolygons(new HashSet<>(zones));
 		painterManager.repaintPainters();
 		
-		fillTableWithZones(view.getZoneTable(), zones);
-		view.getZoneIF().setVisible(true);
+//		fillTableWithZones(view.getZoneTable(), zones);
+//		view.getZoneIF().setVisible(true);
 	}
 
 	public void addStopsInNetworkToMap(String networkName) {
@@ -154,6 +190,8 @@ public class TariffZonesController {
 		
 		model.setNetwork((Network) view.getCitiesCb().getSelectedItem());
 		model.resetLists();
+		
+		insertedNetworkName = networkName;
 		
 		ResultSet resultSet = model.getStops(networkName);
 		if (resultSet == null) {
@@ -632,43 +670,93 @@ public class TariffZonesController {
 			return;
 		}
 		
+		table.getModel().removeTableModelListener(getTableModelListener());
+		
 		StopTableModel stopTableModel = new StopTableModel(list);
+		table.setAutoCreateRowSorter(false);
+		table.setRowSorter(null);
 		table.setModel(stopTableModel);
-		table.getModel().addTableModelListener(new TableModelListener() {
-			
-			@Override
-			public void tableChanged(TableModelEvent e) {
-				if (e.getType() == TableModelEvent.UPDATE) {
-					Stop stop = (Stop) list.get(e.getFirstRow());
-					if (stop != null) {
-						stop.setState(State.MODIFIED);
-						model.getUnsavedStops().add(stop);
-					}
-				}
-			}
-		});
+		table.setAutoCreateRowSorter(true);
+		table.getModel().addTableModelListener(getTableModelListener());
 	}
 	
 	public void fillTableWithWays(JTable table, ArrayList<Way> list) {
-		if (list == null) {
+		if (list == null && list.size() == 0) {
 			return;
 		}
 		
+		
+		table.getModel().removeTableModelListener(getTableModelListener());
+		
 		WayTableModel wayTableModel = new WayTableModel(list);
+		table.setAutoCreateRowSorter(false);
+		table.setRowSorter(null);
 		table.setModel(wayTableModel);
-		table.getModel().addTableModelListener(new TableModelListener() {
-			
-			@Override
-			public void tableChanged(TableModelEvent e) {
-				if (e.getType() == TableModelEvent.UPDATE) {
-					Way way = (Way) list.get(e.getFirstRow());
-					if (way != null) {
-						way.setState(State.MODIFIED);
-						model.getUnsavedWays().add(way);
+		table.setAutoCreateRowSorter(true);
+		table.getModel().addTableModelListener(getTableModelListener());
+	}
+	
+	private TableModelListener tableModelListener;
+	
+	private TableModelListener getTableModelListener() {
+		if (tableModelListener == null) {
+			tableModelListener = new TableModelListener() {
+				
+				@Override
+				public void tableChanged(TableModelEvent e) {
+					ArrayList list = null;
+					if (e.getSource().equals(view.getStopTable().getModel())) {
+						if (e.getType() == TableModelEvent.UPDATE) {
+							AbstractTableModel stopTableModel = (AbstractTableModel) view.getStopTable().getModel();
+						
+							if (stopTableModel instanceof StopTableModel) {
+								list = (ArrayList) ((StopTableModel)stopTableModel).getData();
+								
+								Stop stop = (Stop) list.get(e.getFirstRow());
+								if (stop != null && !model.getUnsavedStops().contains(stop)) {
+									stop.setState(State.MODIFIED); //TODO: last stop in table also added when adding a new stop
+									model.getUnsavedStops().add(stop);
+								}
+							}
+							else if (stopTableModel instanceof WayTableModel) {
+								list = (ArrayList) ((WayTableModel)stopTableModel).getData();
+								
+								Way way = (Way) list.get(e.getFirstRow());
+								if (way != null && !model.getUnsavedWays().contains(way)) {
+									way.setState(State.MODIFIED);
+									model.getUnsavedWays().add(way);
+								}
+							}
+						}
+					}
+					else if (e.getSource().equals(view.getWayTable().getModel())) {
+						if (e.getType() == TableModelEvent.UPDATE) {
+							AbstractTableModel wayTableModel = (AbstractTableModel) view.getWayTable().getModel();
+						
+							if (wayTableModel instanceof StopTableModel) {
+								list = (ArrayList) ((StopTableModel)wayTableModel).getData();
+								
+								Stop stop = (Stop) list.get(e.getFirstRow());
+								if (stop != null && !model.getUnsavedStops().contains(stop)) {
+									stop.setState(State.MODIFIED);
+									model.getUnsavedStops().add(stop);
+								}
+							}
+							else if (wayTableModel instanceof WayTableModel) {
+								list = (ArrayList) ((WayTableModel)wayTableModel).getData();
+								
+								Way way = (Way) list.get(e.getFirstRow());
+								if (way != null && !model.getUnsavedWays().contains(way)) {
+									way.setState(State.MODIFIED);
+									model.getUnsavedWays().add(way);
+								}
+							}
+						}
 					}
 				}
-			}
-		});
+			};
+		}
+		return tableModelListener;
 	}
 	
 	public void fillTableWithZones(JTable table, ArrayList<Zone> list) {
@@ -762,22 +850,6 @@ public class TariffZonesController {
 		view.getWayMapPopupMenu().show(view.getMapViewer(), (int) point.getX(), (int) point.getY());
 		return true;
 	}
-
-	public int getClickedStopIndex(Point point) {
-		if (model.getNetwork() == null || model.getNetwork().getStops() == null) {
-			return -1;
-		}
-		
-		ArrayList<Stop> stops = model.getNetwork().getStops();
-		for (int i = 0; i < stops.size(); i++) {
-			Point2D p = view.getMapViewer().convertGeoPositionToPoint(stops.get(i).getPosition());
-			if (point.distance(p) <= painterManager.getWaypointDiameter()/2) {
-				return i;
-			}
-		}
-		
-		return -1;
-	}
 	
 	public Way checkMousePositionForWay(Point point) {
 		if (model.getNetwork() == null || model.getNetwork().getWays() == null) {
@@ -796,13 +868,29 @@ public class TariffZonesController {
 		
 		return null;
 	}
-	
-	public int getClickedWayIndex(Point point) {
-		if (model.getNetwork() == null || model.getNetwork().getWays() == null) {
+
+	public int getClickedStopIndex(Point point, List<Stop> stops) {
+		if (model.getNetwork() == null || stops == null) {
 			return -1;
 		}
 		
-		ArrayList<Way> ways = model.getNetwork().getWays();
+//		ArrayList<Stop> stops = model.getNetwork().getStops();
+		for (int i = 0; i < stops.size(); i++) {
+			Point2D p = view.getMapViewer().convertGeoPositionToPoint(stops.get(i).getPosition());
+			if (point.distance(p) <= painterManager.getWaypointDiameter()/2) {
+				return i;
+			}
+		}
+		
+		return -1;
+	}
+	
+	public int getClickedWayIndex(Point point, List<Way> ways) {
+		if (model.getNetwork() == null || ways == null) {
+			return -1;
+		}
+		
+//		ArrayList<Way> ways = model.getNetwork().getWays();
 		for (int i = 0; i < ways.size(); i++) {
 			
 			Point2D startPoint = view.getMapViewer().convertGeoPositionToPoint(ways.get(i).getStartPosition());
@@ -872,13 +960,6 @@ public class TariffZonesController {
 		}
 		
 		return countryIds;
-	}
-
-	public boolean isUnsavedChanges() {
-		if (model.getUnsavedStops().isEmpty() && model.getUnsavedWays().isEmpty()) {
-			return false;
-		}
-		return true;
 	}
 
 	public void highligthStops(ArrayList<Stop> stops, Color red) {
@@ -959,6 +1040,13 @@ public class TariffZonesController {
 		else {
 			view.getMapToolboxPl().getSaveBtn().setEnabled(false);
 		}
+	}
+
+	public boolean isUnsavedChanges() {
+		if (model.getUnsavedStops().isEmpty() && model.getUnsavedWays().isEmpty()) {
+			return false;
+		}
+		return true;
 	}
 	
 	private void updateTables() {

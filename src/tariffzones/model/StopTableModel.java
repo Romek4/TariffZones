@@ -30,7 +30,7 @@ public class StopTableModel extends AbstractTableModel {
     }
 
 	public Class getColumnClass(int c) {
-		if (data == null) {
+		if (data == null || data.isEmpty()) {
 			return null;
 		}
 		
@@ -52,7 +52,7 @@ public class StopTableModel extends AbstractTableModel {
 
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex) {
-		if (data == null) {
+		if (data == null || data.isEmpty()) {
 			return null;
 		}
 		
@@ -66,7 +66,7 @@ public class StopTableModel extends AbstractTableModel {
 	}
 	
 	public Stop getStopAt(int rowIndex) {
-		if (data == null) {
+		if (data == null || data.isEmpty()) {
 			return null;
 		}
 		
@@ -86,7 +86,7 @@ public class StopTableModel extends AbstractTableModel {
 	
 	@Override
 	public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-		if (data == null) {
+		if (data == null || data.isEmpty()) {
 			return;
 		}
 		
@@ -105,5 +105,9 @@ public class StopTableModel extends AbstractTableModel {
 				break;
 		}
 		fireTableDataChanged();
+	}
+	
+	public List<Stop> getData() {
+		return data;
 	}
 }

@@ -61,6 +61,7 @@ import org.jxmapviewer.viewer.TileFactory;
 
 import tariffzones.controller.TariffZonesController;
 import tariffzones.map.MapViewer;
+import tariffzones.model.GeoToPointHelpConverter;
 import tariffzones.model.Network;
 import tariffzones.model.StopTableModel;
 import tariffzones.model.WayTableModel;
@@ -226,7 +227,7 @@ public class TariffZonesView extends JFrame {
 		getMapViewer().add(getMapToolboxPl());
 		
 		getTileServersCb().setBounds(170, 10, 150, 20);
-		getMapViewer().add(getTileServersCb());
+//		getMapViewer().add(getTileServersCb());
 		
 		getZoneIF().setBounds(10, 100, 450, 250);
 		getMapViewer().add(getZoneIF());
@@ -444,35 +445,51 @@ public class TariffZonesView extends JFrame {
 								getInfoLabel().setText(DEFAULT_INFO_MSG);
 							}
 							
-							int stopIndex = getController().getClickedStopIndex(e.getPoint());
-							int wayIndex = getController().getClickedWayIndex(e.getPoint());
-							if (stopIndex >= 0) {
-								if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
+							int stopIndex = 0;
+							int wayIndex = 0;
+							
+							
+							if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
+								stopIndex = getController().getClickedStopIndex(e.getPoint(), ((StopTableModel)getStopTable().getModel()).getData());
+								if (stopIndex >= 0) {
 									int tableIndex = getStopTable().convertRowIndexToView(stopIndex);
 									getStopTable().setRowSelectionInterval(tableIndex, tableIndex);
-								}
-								else {
-									//second table will be Stops
-									int tableIndex = getWayTable().convertRowIndexToView(stopIndex);
-									getWayTable().setRowSelectionInterval(tableIndex, tableIndex);
-								}
-							}
-							else if (wayIndex >= 0) {
-								if (getStopCb().getSelectedItem().toString().equals("Ways")) {
-									int tableIndex = getStopTable().convertRowIndexToView(wayIndex);
-									getStopTable().setRowSelectionInterval(tableIndex, tableIndex);
-								}
-								else {
-									//second table will be Ways
-									int tableIndex = getWayTable().convertRowIndexToView(wayIndex);
-									getWayTable().setRowSelectionInterval(tableIndex, tableIndex);
+									return;
 								}
 							}
 							else {
-								getStopTable().clearSelection();
-								getWayTable().clearSelection();
-								getController().resetSelected();
+								//second table will be Stops
+								stopIndex = getController().getClickedStopIndex(e.getPoint(), ((StopTableModel)getWayTable().getModel()).getData());
+								if (stopIndex >= 0) {
+									int tableIndex = getWayTable().convertRowIndexToView(stopIndex);
+									getWayTable().setRowSelectionInterval(tableIndex, tableIndex);
+									return;
+								}
 							}
+							
+							if (getStopCb().getSelectedItem().toString().equals(WAYS)) {
+								wayIndex = getController().getClickedWayIndex(e.getPoint(), ((WayTableModel)getStopTable().getModel()).getData());
+								if (wayIndex >= 0) {
+									int tableIndex = getStopTable().convertRowIndexToView(wayIndex);
+									getStopTable().setRowSelectionInterval(tableIndex, tableIndex);
+									return;
+								}
+							}
+							else {
+								//second table will be Ways
+								wayIndex = getController().getClickedWayIndex(e.getPoint(), ((WayTableModel)getWayTable().getModel()).getData());
+								if (wayIndex >= 0) {
+									int tableIndex = getWayTable().convertRowIndexToView(wayIndex);
+									getWayTable().setRowSelectionInterval(tableIndex, tableIndex);
+									return;
+								}
+							}
+							
+							getStopTable().clearSelection();
+							getWayTable().clearSelection();
+							getZoneTable().clearSelection();
+							getController().resetSelected();
+							
 						}
 						else if (SwingUtilities.isRightMouseButton(e)) {
 							if (!getController().checkForStopAndShowPopup(e.getPoint())) {
@@ -539,196 +556,201 @@ public class TariffZonesView extends JFrame {
 				
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					//getConnectToDBBtn
-					if (e.getSource().equals(getConnectToDBBtn())) {
-						if (getController().connectToDB()) {
-							List networks = getController().getNetworks();
-							if (networks != null) {
-								getCitiesCb().setModel((new DefaultComboBoxModel(networks.toArray())));
-							}
-						}
-					}
-					//getLoadBtn
-					else if (e.getSource().equals(getLoadBtn())) {
-						if (getController().isUnsavedChanges()) {
-							int check = JOptionPane.showConfirmDialog(getContentPane(), "There are some unsaved changes! Do you want to save changes before reloading of network?", "Stop delete", JOptionPane.YES_NO_OPTION);
-							if (check == 0) {
-								if (getController().saveChangesToDatabase()) {
-									refreshCitiesCb();
-									getController().clearUnsaved();
-									getController().updateBtns();
-									JOptionPane.showMessageDialog(getContentPane(), "Data saved.", "Save Data To Database", JOptionPane.INFORMATION_MESSAGE);
+					try {
+						//getConnectToDBBtn
+						if (e.getSource().equals(getConnectToDBBtn())) {
+							if (getController().connectToDB()) {
+								List networks = getController().getNetworks();
+								if (networks != null) {
+									getCitiesCb().setModel((new DefaultComboBoxModel(networks.toArray())));
 								}
 							}
 						}
-						
-						Object selectedItem = getCitiesCb().getSelectedItem();
-						if (selectedItem != null) {
-							getController().addStopsInNetworkToMap(((Network)selectedItem).getNetworkName());
-							getController().addWaysBetweenStopsInCityToMap(((Network)selectedItem).getNetworkName());
-						}
-					}
-					//first combobox
-					else if (e.getSource().equals(getStopCb())) {
-						if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
-							getController().fillTableWithStops(getStopTable());
-							getController().resetSelected();
-							if (getWayCb().getSelectedItem().toString().equals(STOPS)) {
-								getStopTable().setModel(getWayTable().getModel());
-								getWayCb().setSelectedItem(WAYS);
+						//getLoadBtn
+						else if (e.getSource().equals(getLoadBtn())) {
+							if (getController().isUnsavedChanges()) {
+								int check = JOptionPane.showConfirmDialog(getContentPane(), "There are some unsaved changes! Do you want to save changes before reloading of network?", "Stop delete", JOptionPane.YES_NO_OPTION);
+								if (check == 0) {
+									if (getController().saveChangesToDatabase()) {
+										refreshCitiesCb();
+										getController().clearUnsaved();
+										getController().updateBtns();
+										JOptionPane.showMessageDialog(getContentPane(), "Data saved.", "Save Data To Database", JOptionPane.INFORMATION_MESSAGE);
+									}
+								}
+							}
+							
+							Object selectedItem = getCitiesCb().getSelectedItem();
+							if (selectedItem != null) {
+								getController().addStopsInNetworkToMap(((Network)selectedItem).getNetworkName());
+								getController().addWaysBetweenStopsInCityToMap(((Network)selectedItem).getNetworkName());
 							}
 						}
-						else {
-							getController().fillTableWithWays(getStopTable());
-							getController().resetSelected();
-							if (getWayCb().getSelectedItem().toString().equals(WAYS)) {
-								getWayCb().setSelectedItem(STOPS);
-							}
-						}
-					}
-					//second combobox
-					else if (e.getSource().equals(getWayCb())) {
-						if (getWayCb().getSelectedItem().toString().equals(STOPS)) {
-							getController().fillTableWithStops(getWayTable());
-							getController().resetSelected();
+						//first combobox
+						else if (e.getSource().equals(getStopCb())) {
 							if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
-								getStopCb().setSelectedItem(WAYS);
-							}
-						}
-						else {
-							getController().fillTableWithWays(getWayTable());
-							getController().resetSelected();
-							if (getStopCb().getSelectedItem().toString().equals(WAYS)) {
-								getStopCb().setSelectedItem(STOPS);
-							}
-						}
-					}
-					else if (e.getSource().equals(getStopFilterTf())) {
-						sorter = new TableRowSorter<TableModel>(getStopTable().getModel());
-						getStopTable().setRowSorter(sorter);
-						sorter.setRowFilter(RowFilter.regexFilter(getStopFilterTf().getText()));
-					}
-					else if (e.getSource().equals(getWayFilterTf())) {
-						sorter = new TableRowSorter<TableModel>(getWayTable().getModel());
-						getWayTable().setRowSorter(sorter);
-						sorter.setRowFilter(RowFilter.regexFilter(getWayFilterTf().getText()));
-					}
-					else if (e.getSource().equals(getTileServersCb())) {
-						TileFactory tileFactory = (TileFactory) getTileServersCb().getSelectedItem();
-						((AbstractTileFactory) tileFactory).setThreadPoolSize(8);
-						getMapViewer().setTileFactory(tileFactory);
-						
-					}
-					else if(e.getSource().equals(getSolveBtn())) {
-						getController().solveTariffZonesProblem();
-					}
-					//getAddStopBtn
-					else if (e.getSource().equals(getAddStopBtn())) {
-							getInfoLabel().setText(MAKEPOINT_INFO_MSG);
-							makeAPoint = true;
-					}
-					//getAddWayBtn
-					else if (e.getSource().equals(getAddWayBtn())) {
-							getInfoLabel().setText(MAKEWAY_INFO_MSG);
-							makeAWay = true;
-					}
-					else if(e.getSource().equals(getSaveBtn())) {
-						if (getController().saveChangesToDatabase()) {
-							refreshCitiesCb();
-							for (Object o : getCitiesCb().getSelectedObjects()) {
-								Network network = (Network) o;
-								if (network.getNetworkName().equals(getController().getLastInsertedNetworkName())) {
-									getCitiesCb().setSelectedItem(network);
+								getController().fillTableWithStops(getStopTable());
+								getController().resetSelected();
+								if (getWayCb().getSelectedItem().toString().equals(STOPS)) {
+									getStopTable().setModel(getWayTable().getModel());
+									getWayCb().setSelectedItem(WAYS);
 								}
 							}
-							getController().addStopsInNetworkToMap(getController().getLastInsertedNetworkName());
-							getController().addWaysBetweenStopsInCityToMap(getController().getLastInsertedNetworkName());
-							getController().clearUnsaved();
-							getController().updateBtns();
-							JOptionPane.showMessageDialog(getContentPane(), "Data saved.", "Save Data To Database", JOptionPane.INFORMATION_MESSAGE);
+							else {
+								getController().fillTableWithWays(getStopTable());
+								getController().resetSelected();
+								if (getWayCb().getSelectedItem().toString().equals(WAYS)) {
+									getWayCb().setSelectedItem(STOPS);
+								}
+							}
 						}
-					}
-					else if (e.getSource().equals(getOpenNetworkFromFilesBtn())) {
-						try {
-							getController().openNetworkFromFiles();
-						} catch (IOException e1) {
-							JOptionPane.showMessageDialog(getRootPane(), e1.toString(), "Read network from files", JOptionPane.ERROR_MESSAGE);
+						//second combobox
+						else if (e.getSource().equals(getWayCb())) {
+							if (getWayCb().getSelectedItem().toString().equals(STOPS)) {
+								getController().fillTableWithStops(getWayTable());
+								getController().resetSelected();
+								if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
+									getStopCb().setSelectedItem(WAYS);
+								}
+							}
+							else {
+								getController().fillTableWithWays(getWayTable());
+								getController().resetSelected();
+								if (getStopCb().getSelectedItem().toString().equals(WAYS)) {
+									getStopCb().setSelectedItem(STOPS);
+								}
+							}
 						}
-					}
-					else if (e.getSource().equals(getRemoveNetworkBtn())) {
-						if (getCitiesCb().getSelectedItem() != null) {
-							int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete this network?", "Network Delete", JOptionPane.YES_NO_OPTION);
-							if (check == 0) {
-								getController().deleteNetwork(((Network)getCitiesCb().getSelectedItem()).getNetworkName());
+						else if (e.getSource().equals(getStopFilterTf())) {
+							sorter = new TableRowSorter<TableModel>(getStopTable().getModel());
+							getStopTable().setRowSorter(sorter);
+							sorter.setRowFilter(RowFilter.regexFilter(getStopFilterTf().getText()));
+						}
+						else if (e.getSource().equals(getWayFilterTf())) {
+							sorter = new TableRowSorter<TableModel>(getWayTable().getModel());
+							getWayTable().setRowSorter(sorter);
+							sorter.setRowFilter(RowFilter.regexFilter(getWayFilterTf().getText()));
+						}
+						else if (e.getSource().equals(getTileServersCb())) {
+							TileFactory tileFactory = (TileFactory) getTileServersCb().getSelectedItem();
+							((AbstractTileFactory) tileFactory).setThreadPoolSize(8);
+							getMapViewer().setTileFactory(tileFactory);
+							
+						}
+						else if(e.getSource().equals(getSolveBtn())) {
+							getController().solveTariffZonesProblem();
+						}
+						//getAddStopBtn
+						else if (e.getSource().equals(getAddStopBtn())) {
+								getInfoLabel().setText(MAKEPOINT_INFO_MSG);
+								makeAPoint = true;
+						}
+						//getAddWayBtn
+						else if (e.getSource().equals(getAddWayBtn())) {
+								getInfoLabel().setText(MAKEWAY_INFO_MSG);
+								makeAWay = true;
+						}
+						else if(e.getSource().equals(getSaveBtn())) {
+							if (getController().saveChangesToDatabase()) {
 								refreshCitiesCb();
+								for (int i = 0; i < getCitiesCb().getItemCount(); i++) {
+									Network network = (Network) getCitiesCb().getItemAt(i);
+									if (network.getNetworkName().equals(getController().getLastInsertedNetworkName())) {
+										getCitiesCb().setSelectedItem(network);
+									}
+								}
+								getController().addStopsInNetworkToMap(((Network)getCitiesCb().getSelectedItem()).getNetworkName());
+								getController().addWaysBetweenStopsInCityToMap(((Network)getCitiesCb().getSelectedItem()).getNetworkName());
+								getController().clearUnsaved();
+								getController().updateBtns();
+								JOptionPane.showMessageDialog(getContentPane(), "Data saved.", "Save Data To Database", JOptionPane.INFORMATION_MESSAGE);
 							}
 						}
-					}
-					else if (e.getSource().equals(getExportStopsToCSVMenuItem())) {
-						getController().exportStops();
-					}
-					else if (e.getSource().equals(getExportWaysToCSVMenuItem())) {
-						getController().exportWays();
-					}
-					else if (e.getSource().equals(getStopEditMenuItem())) {
-						getController().editStop(getController().getLastPickedStop());
-					}
-					else if (e.getSource().equals(getStopDeleteMenuItem())) {
-						int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete this stop?", "Stop Delete", JOptionPane.YES_NO_OPTION);
-						if (check == 0) {
-							getController().deleteStop(getController().getLastPickedStop());
-							getController().resetLastPickedStop();
+						else if (e.getSource().equals(getOpenNetworkFromFilesBtn())) {
+							try {
+								getController().openNetworkFromFiles();
+							} catch (IOException e1) {
+								JOptionPane.showMessageDialog(getRootPane(), e1.toString(), "Read network from files", JOptionPane.ERROR_MESSAGE);
+							}
 						}
-					}
-					else if (e.getSource().equals(getWayEditMenuItem())) {
-						getController().editWay(getController().getLastPickedWay());
-					}
-					else if (e.getSource().equals(getWayDeleteMenuItem())) {
-						int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete this way?", "Way Delete", JOptionPane.YES_NO_OPTION);
-						if (check == 0) {
-							getController().deleteWay(getController().getLastPickedWay());
-							getController().resetLastPickedWay();
+						else if (e.getSource().equals(getRemoveNetworkBtn())) {
+							if (getCitiesCb().getSelectedItem() != null) {
+								int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete this network?", "Network Delete", JOptionPane.YES_NO_OPTION);
+								if (check == 0) {
+									getController().deleteNetwork(((Network)getCitiesCb().getSelectedItem()).getNetworkName());
+									refreshCitiesCb();
+								}
+							}
 						}
-					}
-					else if (e.getSource().equals(getDeleteFromStopTableMenuItem())) {
-						if (getStopTable().getSelectedRowCount() == 0) {
-							return;
+						else if (e.getSource().equals(getExportStopsToCSVMenuItem())) {
+							getController().exportStops();
 						}
+						else if (e.getSource().equals(getExportWaysToCSVMenuItem())) {
+							getController().exportWays();
+						}
+						else if (e.getSource().equals(getStopEditMenuItem())) {
+							getController().editStop(getController().getLastPickedStop());
+						}
+						else if (e.getSource().equals(getStopDeleteMenuItem())) {
+							int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete this stop?", "Stop Delete", JOptionPane.YES_NO_OPTION);
+							if (check == 0) {
+								getController().deleteStop(getController().getLastPickedStop());
+								getController().resetLastPickedStop();
+							}
+						}
+						else if (e.getSource().equals(getWayEditMenuItem())) {
+							getController().editWay(getController().getLastPickedWay());
+						}
+						else if (e.getSource().equals(getWayDeleteMenuItem())) {
+							int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete this way?", "Way Delete", JOptionPane.YES_NO_OPTION);
+							if (check == 0) {
+								getController().deleteWay(getController().getLastPickedWay());
+								getController().resetLastPickedWay();
+							}
+						}
+						else if (e.getSource().equals(getDeleteFromStopTableMenuItem())) {
+							if (getStopTable().getSelectedRowCount() == 0) {
+								return;
+							}
+							
+							int [] selectedRows = convertRowIndexes(getStopTable(), getStopTable().getSelectedRows());
+							
+							if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
+								int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected stop/s?", "Stop Delete", JOptionPane.YES_NO_OPTION);
+								if (check == 0) {
+									getController().deleteStops(((StopTableModel)getStopTable().getModel()).getStopsAt(selectedRows));
+								}
+							}
+							else {
+								int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected way/s?", "Way Delete", JOptionPane.YES_NO_OPTION);
+								if (check == 0) {
+									getController().deleteWays(((WayTableModel)getStopTable().getModel()).getWaysAt(getStopTable().getSelectedRows()));
+								}
+							}
+						}
+						else if (e.getSource().equals(getDeleteFromWayTableMenuItem())) {
+							if (getWayTable().getSelectedRowCount() == 0) {
+								return;
+							}
 						
-						int [] selectedRows = convertRowIndexes(getStopTable(), getStopTable().getSelectedRows());
-						
-						if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
-							int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected stop/s?", "Stop Delete", JOptionPane.YES_NO_OPTION);
-							if (check == 0) {
-								getController().deleteStops(((StopTableModel)getStopTable().getModel()).getStopsAt(selectedRows));
+							int [] selectedRows = convertRowIndexes(getWayTable(), getWayTable().getSelectedRows());
+							
+							if (getWayCb().getSelectedItem().toString().equals(STOPS)) {
+								int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected stop/s?", "Stop Delete", JOptionPane.YES_NO_OPTION);
+								if (check == 0) {
+									getController().deleteStops(((StopTableModel)getWayTable().getModel()).getStopsAt(selectedRows));
+								}
+							}
+							else {
+								int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected way/s?", "Way Delete", JOptionPane.YES_NO_OPTION);
+								if (check == 0) {
+									getController().deleteWays(((WayTableModel)getWayTable().getModel()).getWaysAt(selectedRows));
+								}
 							}
 						}
-						else {
-							int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected way/s?", "Way Delete", JOptionPane.YES_NO_OPTION);
-							if (check == 0) {
-								getController().deleteWays(((WayTableModel)getStopTable().getModel()).getWaysAt(getStopTable().getSelectedRows()));
-							}
-						}
-					}
-					else if (e.getSource().equals(getDeleteFromWayTableMenuItem())) {
-						if (getWayTable().getSelectedRowCount() == 0) {
-							return;
-						}
-					
-						int [] selectedRows = convertRowIndexes(getWayTable(), getWayTable().getSelectedRows());
-						
-						if (getWayCb().getSelectedItem().toString().equals(STOPS)) {
-							int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected stop/s?", "Stop Delete", JOptionPane.YES_NO_OPTION);
-							if (check == 0) {
-								getController().deleteStops(((StopTableModel)getWayTable().getModel()).getStopsAt(selectedRows));
-							}
-						}
-						else {
-							int check = JOptionPane.showConfirmDialog(getContentPane(), "Are you sure you want to delete selected way/s?", "Way Delete", JOptionPane.YES_NO_OPTION);
-							if (check == 0) {
-								getController().deleteWays(((WayTableModel)getWayTable().getModel()).getWaysAt(selectedRows));
-							}
-						}
+					} catch(Exception ex) {
+						//TODO:
+						ex.printStackTrace();
 					}
 				}
 			};
@@ -763,29 +785,53 @@ public class TariffZonesView extends JFrame {
 				
 				@Override
 				public void valueChanged(ListSelectionEvent e) {
-					if (e.getSource().equals(getStopTable().getSelectionModel())) {
- 						int [] selectedRows = convertRowIndexes(getStopTable(), getStopTable().getSelectedRows());
-						
-						if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
-							getController().highligthStops(((StopTableModel)getStopTable().getModel()).getStopsAt(selectedRows), Color.RED);
+					try {
+						if (e.getSource().equals(getStopTable().getSelectionModel())) {
+	 						int [] selectedRows = convertRowIndexes(getStopTable(), getStopTable().getSelectedRows());
+							
+							if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
+								getController().highligthStops(((StopTableModel)getStopTable().getModel()).getStopsAt(selectedRows), Color.RED);
+							}
+							else {
+								getController().highligthWays(((WayTableModel)getStopTable().getModel()).getWaysAt(selectedRows), Color.RED);
+							}
 						}
-						else {
-							getController().highligthWays(((WayTableModel)getStopTable().getModel()).getWaysAt(selectedRows), Color.RED);
+						else if (e.getSource().equals(getWayTable().getSelectionModel())) {
+							int [] selectedRows = convertRowIndexes(getWayTable(), getWayTable().getSelectedRows());
+							
+							if (getWayCb().getSelectedItem().toString().equals(STOPS)) {
+								getController().highligthStops(((StopTableModel)getWayTable().getModel()).getStopsAt(selectedRows), Color.RED);
+							}
+							else {
+								getController().highligthWays(((WayTableModel)getWayTable().getModel()).getWaysAt(selectedRows), Color.RED);
+							}
 						}
-					}
-					else if (e.getSource().equals(getWayTable().getSelectionModel())) {
-						int [] selectedRows = convertRowIndexes(getWayTable(), getWayTable().getSelectedRows());
-						
-						if (getWayCb().getSelectedItem().toString().equals(STOPS)) {
-							getController().highligthStops(((StopTableModel)getWayTable().getModel()).getStopsAt(selectedRows), Color.RED);
+						else if (e.getSource().equals(getZoneTable().getSelectionModel())) {
+							if (getZoneTable().getSelectedRow() == -1) {
+								if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
+									getController().fillTableWithStops(getStopTable());
+									getController().fillTableWithWays(getWayTable());
+								}
+								else {
+									getController().fillTableWithStops(getWayTable());
+									getController().fillTableWithWays(getStopTable());
+								}
+								return;
+							}
+							
+							Zone zone = (Zone) ((ZoneTableModel)getZoneTable().getModel()).getValueAt(getZoneTable().getSelectedRow(), 0);
+							getController().highligthStops(zone.getStopsInZone(), Color.RED);
+							if (getStopCb().getSelectedItem().toString().equals(STOPS)) {
+								getController().fillTableWithStops(getStopTable(), zone.getStopsInZone());
+								getController().fillTableWithWays(getWayTable(), zone.getWaysInZone());
+							}
+							else {
+								getController().fillTableWithStops(getWayTable(), zone.getStopsInZone());
+								getController().fillTableWithWays(getStopTable(), zone.getWaysInZone());
+							}
 						}
-						else {
-							getController().highligthWays(((WayTableModel)getWayTable().getModel()).getWaysAt(selectedRows), Color.RED);
-						}
-					}
-					else if (e.getSource().equals(getZoneTable().getSelectionModel())) {
-						Zone zone = (Zone) ((ZoneTableModel)getZoneTable().getModel()).getValueAt(getZoneTable().getSelectedRow(), 0);
-						getController().highligthStops(zone.getStopsInZone(), Color.RED);
+					} catch(Exception ex) {
+//						ex.printStackTrace();
 					}
 				}
 			};
@@ -999,6 +1045,8 @@ public class TariffZonesView extends JFrame {
 
 			mapViewer.setZoom(15);
 			mapViewer.setAddressLocation(slovakia);
+			
+			GeoToPointHelpConverter.mapViewer = mapViewer;
 		}
 		return mapViewer;
 	}
@@ -1194,7 +1242,7 @@ public class TariffZonesView extends JFrame {
 	public JTable getWayTable() {
 		if (wayTable == null) {
 			wayTable = new JTable();
-			wayTable.setAutoCreateRowSorter(true);
+//			wayTable.setAutoCreateRowSorter(true);
 		}
 		return wayTable;
 	}

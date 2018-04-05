@@ -1,14 +1,19 @@
 package tariffzones.model;
 
+import java.awt.Point;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 
+import org.jxmapviewer.JXMapKit;
+import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.viewer.GeoPosition;
 import org.jxmapviewer.viewer.Waypoint;
 
 import tariffzones.tariffzonesprocessor.djikstra.Node;
 import tariffzones.tariffzonesprocessor.greedy.Zone;
+import voronoi.Site;
 
-public class Stop implements Node, Waypoint, ObjectState {
+public class Stop extends Site implements Node, Waypoint, ObjectState {
 	private int id = -1; // id from db
 	private int number;
 	private String name;
@@ -21,6 +26,7 @@ public class Stop implements Node, Waypoint, ObjectState {
 	private State state = State.DEFAULT;
 	
 	public Stop(Network network, int number, String name, int numberOfHabitants, GeoPosition geoPosition) {
+		super(geoPosition.getLatitude(), geoPosition.getLongitude());
 		this.network = network;
 		this.number = number;
 		this.name = name;
@@ -29,6 +35,7 @@ public class Stop implements Node, Waypoint, ObjectState {
 	}
 	
 	public Stop(Network network, int number, String name, int numberOfHabitants, double latitude, double longitude) {
+		super(latitude, longitude);
 		this.network = network;
 		this.number = number;
 		this.name = name;
@@ -37,6 +44,7 @@ public class Stop implements Node, Waypoint, ObjectState {
 	}
 	
 	public Stop(int id, Network network, int number, String name, int numberOfHabitants, double latitude, double longitude) {
+		super(latitude, longitude);
 		this.id = id;
 		this.network = network;
 		this.number = number;
@@ -46,6 +54,7 @@ public class Stop implements Node, Waypoint, ObjectState {
 	}
 	
 	public Stop(int number, String name, int numberOfHabitants, double latitude, double longitude) {
+		super(latitude, longitude);
 		this.number = number;
 		this.name = name;
 		this.numberOfCustomers = numberOfHabitants;
@@ -163,4 +172,21 @@ public class Stop implements Node, Waypoint, ObjectState {
 	public void setState(State state) {
 		this.state = state;
 	}
+
+	@Override
+	public double getX() {
+		return roundDouble(this.getLongitude());
+//		return (GeoToPointHelpConverter.convertGeoPositionToPoint(this.getPosition())).getX();
+	}
+
+	@Override
+	public double getY() {
+		return roundDouble(this.getLatitude());
+//		return (GeoToPointHelpConverter.convertGeoPositionToPoint(this.getPosition())).getY();
+	}
+	
+	private double roundDouble(double d) {
+		return(double)Math.round(d * 1000000000000d) / 1000000000000d;
+	}
+	
 }

@@ -36,6 +36,8 @@ public class Network {
 	}
 
 	public boolean removeWay(Way way) {
+		way.getStartPoint().getPartOfWays().remove(way);
+		way.getEndPoint().getPartOfWays().remove(way);
 		return getWays().remove(way);
 	}
 

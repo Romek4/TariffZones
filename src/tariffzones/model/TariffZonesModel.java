@@ -44,12 +44,15 @@ public class TariffZonesModel {
 	private SQLProcessor sqlProcessor;
 	private Object[] sqlParameters;
 	
+	private boolean connectedToDB = false;
+	
 	public TariffZonesModel() {
 		sqlProcessor = new SQLProcessor();
 	}
 	
 	public boolean connectToDB(String dbUrl, String username, String password) {
-		return sqlProcessor.connectDatabase(dbUrl, username, password);
+		connectedToDB = sqlProcessor.connectDatabase(dbUrl, username, password);getClass();
+		return connectedToDB;
 	}
 	
 	public void runDjikstra() {
@@ -363,8 +366,9 @@ public class TariffZonesModel {
 		}
 		
 		if (stop != null) {
-			if (getUnsavedStops().contains(stop)) {
+			if (getUnsavedStops().contains(stop) && stop.getState().equals(State.ADDED)) {
 				getUnsavedStops().remove(stop);
+				return true;
 			}
 			stop.setState(State.REMOVED);
 			getUnsavedStops().add(stop);
@@ -372,6 +376,9 @@ public class TariffZonesModel {
 				removeAndRememberWay(way);
 			}
 			getNetwork().removeStop(stop);
+			if (stop.getZone() != null) {
+				stop.getZone().getStopsInZone().remove(stop);
+			}
 			return true;
 		}
 		return false;
@@ -412,12 +419,15 @@ public class TariffZonesModel {
 		}
 		
 		if (way != null) {
-			if (getUnsavedWays().contains(way)) {
+			if (getUnsavedWays().contains(way) && way.getState().equals(State.ADDED)) {
 				getUnsavedWays().remove(way);
 			}
 			way.setState(State.REMOVED);
 			getUnsavedWays().add(way);
 			getNetwork().removeWay(way);
+			if (way.getStartPoint().getZone() != null) {
+				way.getStartPoint().getZone().getWaysInZone().remove(way); //TODO: look TODO in getWaysInZone()
+			}
 			return true;
 		}
 		return false;

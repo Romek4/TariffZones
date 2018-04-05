@@ -9,16 +9,16 @@ import java.util.Set;
 import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.painter.AbstractPainter;
 
-public class PolygonPainter<P extends Polygon> extends AbstractPainter<JXMapViewer> {
+public class PolygonPainter<Zone> extends AbstractPainter<JXMapViewer> {
 
 	private Renderer polygonRenderer = new DefaultPolygonRenderer();
-	private Set<P> polygons;
+	private Set<Zone> polygons;
 	
 	public PolygonPainter() {
 		polygons = new HashSet<>();
 	}
 	
-	public PolygonPainter(Set<P> polygons) {
+	public PolygonPainter(Set<Zone> polygons) {
 		this.polygons = polygons;
 	}
 	
@@ -33,7 +33,7 @@ public class PolygonPainter<P extends Polygon> extends AbstractPainter<JXMapView
 
 		g.translate(-viewportBounds.getX(), -viewportBounds.getY());
 
-		for (P p : getPolygons())
+		for (Zone p : getPolygons())
 		{
 			polygonRenderer.paintO(g, map, p);
 		}
@@ -45,7 +45,7 @@ public class PolygonPainter<P extends Polygon> extends AbstractPainter<JXMapView
 		this.polygonRenderer = polygonRenderer;
 	}
 	
-	public Set<P> getPolygons()	{
+	public Set<Zone> getPolygons()	{
 		if (polygons != null) {
 			return Collections.unmodifiableSet(polygons);
 		}
@@ -53,7 +53,7 @@ public class PolygonPainter<P extends Polygon> extends AbstractPainter<JXMapView
 		return new HashSet<>();
 	}
 
-	public void setPolygons(Set<P> polygons) {
+	public void setPolygons(Set<Zone> polygons) {
 		this.polygons = polygons;
 	}
 }

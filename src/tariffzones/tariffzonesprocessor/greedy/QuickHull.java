@@ -86,6 +86,10 @@ public class QuickHull {
          }
     }
      
+    if (furthestPoint == -1) {
+		return;
+	}
+    
     GeoPosition P = set.get(furthestPoint);
     set.remove(furthestPoint);
     hull.add(insertPosition,P);

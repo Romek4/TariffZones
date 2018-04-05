@@ -15,6 +15,7 @@ import tariffzones.map.painter.DefaultPolygonRenderer;
 import tariffzones.map.painter.DefaultWayRenderer;
 import tariffzones.map.painter.PolygonPainter;
 import tariffzones.map.painter.StopWaypointRenderer;
+import tariffzones.map.painter.VoronoiEdgePainter;
 import tariffzones.map.painter.Way;
 import tariffzones.map.painter.WayPainter;
 import tariffzones.model.Network;
@@ -50,10 +51,10 @@ public class PainterManager {
 		
 		wayPainter = new WayPainter<>();
 		
-		DefaultWayRenderer waypointRenderer = new DefaultWayRenderer(Color.RED);
-		waypointRenderer.setLineStroke(3);
+		DefaultWayRenderer wayRenderer = new DefaultWayRenderer(Color.RED);
+		wayRenderer.setLineStroke(3);
 		selectedWayPainter = new WayPainter<>();
-		selectedWayPainter.setWayRenderer(waypointRenderer);
+		selectedWayPainter.setWayRenderer(wayRenderer);
 		
 		polygonPainter = new PolygonPainter<>();
 		polygonPainter.setPolygonRenderer(new DefaultPolygonRenderer());
@@ -62,9 +63,14 @@ public class PainterManager {
 		painters.add(polygonPainter);
 		painters.add(selectedWaypointPainter);
 		painters.add(waypointPainter);
-		painters.add(wayPainter);
+//		painters.add(wayPainter);
 		painters.add(selectedWayPainter);
 		
+		compoundPainter = new CompoundPainter<>((List<? extends Painter<Painter<JXMapViewer>>>) painters);
+	}
+	
+	public void addVoronoiEdgePainter(VoronoiEdgePainter voronoiEdgePainter) {
+		painters.add(voronoiEdgePainter);
 		compoundPainter = new CompoundPainter<>((List<? extends Painter<Painter<JXMapViewer>>>) painters);
 	}
 	
