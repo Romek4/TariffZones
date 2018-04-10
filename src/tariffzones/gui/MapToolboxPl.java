@@ -1,6 +1,6 @@
 package tariffzones.gui;
 
-import java.awt.Component;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -10,17 +10,18 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
-import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JPanel;
-import javax.swing.text.html.HTMLDocument.HTMLReader.HiddenAction;
+import javax.swing.border.Border;
+import javax.swing.border.LineBorder;
 
 public class MapToolboxPl extends JPanel {
 	private JButton solveBtn;
 	private JButton pointBtn;
 	private JButton wayBtn;
 	private JButton saveBtn;
+	private JButton openNetworkFromFilesBtn;
 	
 	public MapToolboxPl() {
 		super();
@@ -36,21 +37,41 @@ public class MapToolboxPl extends JPanel {
 		gbc.weightx = 0.5;
 		gbc.weighty = 1;
 		
-		gbc.gridx = 0;
-		gbc.gridy = 0;
-		this.add(getSolveBtn(), gbc);
+//		gbc.gridx = 0;
+//		gbc.gridy = 0;
+//		this.add(getOpenNetworkFromFilesBtn(), gbc);
 		
 		gbc.gridx = 1;
 		gbc.gridy = 0;
-		this.add(getPointBtn(), gbc);
+		this.add(getSolveBtn(), gbc);
 		
 		gbc.gridx = 2;
 		gbc.gridy = 0;
-		this.add(getWayBtn(), gbc);
+		this.add(getPointBtn(), gbc);
 		
 		gbc.gridx = 3;
 		gbc.gridy = 0;
-		this.add(getSaveBtn(), gbc);
+		this.add(getWayBtn(), gbc);
+		
+		gbc.gridx = 4;
+		gbc.gridy = 0;
+//		this.add(getSaveBtn(), gbc);
+	}
+	
+	public JButton getOpenNetworkFromFilesBtn() {
+		if (openNetworkFromFilesBtn == null) {
+			openNetworkFromFilesBtn = new JButton();
+			openNetworkFromFilesBtn.setSize(new Dimension(32, 32));
+			openNetworkFromFilesBtn.setContentAreaFilled(false);
+			try {
+				Image img = ImageIO.read(new FileInputStream("resources/images/openIcon.png"));
+				openNetworkFromFilesBtn.setIcon(new ImageIcon(img.getScaledInstance(openNetworkFromFilesBtn.getWidth(), openNetworkFromFilesBtn.getHeight(), Image.SCALE_SMOOTH)));
+				openNetworkFromFilesBtn.setToolTipText("Read network from files");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return openNetworkFromFilesBtn;
 	}
 
 	public JButton getSolveBtn() {

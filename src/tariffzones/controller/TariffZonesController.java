@@ -136,11 +136,6 @@ public class TariffZonesController {
 			solver.runGreedyAlgorithm(model.getNetworkStops(), numberOfZones, model.getDistanceMatrix(), useOnlyNumberOfHabs, useNumberOfHabs);
 		}
 		
-		GeoPosition west = new GeoPosition(0, 180);
-		GeoPosition east = new GeoPosition(0, -180);
-		GeoPosition north = new GeoPosition(180, 0);
-		GeoPosition south = new GeoPosition(-180, 0);
-		
 		double westBorder = 180; //max longitude
 		double eastBorder = 0; //min longitude
 		double northBorder = 0; //min latitude
@@ -165,23 +160,21 @@ public class TariffZonesController {
 		
 		Voronoi voronoi = new Voronoi(model.getNetworkStops(), westBorder, eastBorder, northBorder, southBorder);
 		
-//		List<VoronoiRegion> regions = voronoi.getRegions();
 //		painterManager.addVoronoiEdgePainter(new VoronoiEdgePainter((ArrayList<Edge>) voronoi.generateVoronoi()));
-        
-//		voronoi.generateVoronoi();
+		voronoi.generateVoronoi();
 		
 		ArrayList<Zone> zones = solver.getZones();
 		for (int i = 0; i < zones.size(); i++) {
 			painterManager.addZoneWaypointPainter(zones.get(i).getStopsInZone(), colorList.get(i));
 			zones.get(i).setColor(colorList.get(i));
-			zones.get(i).preparePolygonGeoPositions();
+//			zones.get(i).preparePolygonGeoPositions();
 		}
 		
 		painterManager.getPolygonPainter().setPolygons(new HashSet<>(zones));
 		painterManager.repaintPainters();
 		
-//		fillTableWithZones(view.getZoneTable(), zones);
-//		view.getZoneIF().setVisible(true);
+		fillTableWithZones(view.getZoneTable(), zones);
+		view.getZoneIF().setVisible(true);
 	}
 
 	public void addStopsInNetworkToMap(String networkName) {
@@ -215,10 +208,10 @@ public class TariffZonesController {
 				view.getMapViewer().setZoom(9);
 			}
 			
-			if (view.getStopCb().getSelectedItem().toString().equals("Stops")) {
+			if (view.getStopCb().getSelectedItem().toString().equals(view.STOPS)) {
 				fillTableWithStops(view.getStopTable(), model.getNetworkStops());
 			}			
-			if (view.getWayCb().getSelectedItem().toString().equals("Stops")) {
+			if (view.getWayCb().getSelectedItem().toString().equals(view.STOPS)) {
 				fillTableWithStops(view.getWayTable(), model.getNetworkStops());
 			}
 			
@@ -247,10 +240,10 @@ public class TariffZonesController {
 						resultSet.getDouble("time_length"));
 			}
 			
-			if (view.getStopCb().getSelectedItem().toString().equals("Ways")) {
+			if (view.getStopCb().getSelectedItem().toString().equals(view.WAYS)) {
 				fillTableWithWays(view.getStopTable(), model.getNetworkWays());
 			}			
-			if (view.getWayCb().getSelectedItem().toString().equals("Ways")) {
+			if (view.getWayCb().getSelectedItem().toString().equals(view.WAYS)) {
 				fillTableWithWays(view.getWayTable(), model.getNetworkWays());
 			}
 			
@@ -359,7 +352,6 @@ public class TariffZonesController {
 	    	JOptionPane.showMessageDialog(view.getMapViewer(), e.getMessage(), "Edit Stop", JOptionPane.ERROR_MESSAGE);
 	    	return;
 	    }
-		
 		
 		painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
 		painterManager.repaintPainters();
@@ -526,23 +518,26 @@ public class TariffZonesController {
 	}
 	
 	public void openNetworkFromFiles() throws IOException, FileNotFoundException {
-		OpenNetworkFromFilesDlg dlg = new OpenNetworkFromFilesDlg();
-		Image img;
-		try {
-			img = ImageIO.read(new FileInputStream("resources/images/networkIcon.png"));
-			dlg.setIconLabelImg(img);
-			dlg.setIconLabelText("Open network from files");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+//		OpenNetworkFromFilesDlg dlg = new OpenNetworkFromFilesDlg();
+//		Image img;
+//		try {
+//			img = ImageIO.read(new FileInputStream("resources/images/networkIcon.png"));
+//			dlg.setIconLabelImg(img);
+//			dlg.setIconLabelText("Open network from files");
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//		
+//		int option = JOptionPane.showConfirmDialog(view.getRootPane(), dlg, "Open Network", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+//        if (option == 2  || option == -1) {
+//            return;
+//        }
+//        
+//		String stopsFilePath = dlg.getStopsFileLb().getText();
+//		String wayFilePath = dlg.getWayFileLb().getText();
 		
-		int option = JOptionPane.showConfirmDialog(view.getRootPane(), dlg, "Open Network", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (option == 2  || option == -1) {
-            return;
-        }
-        
-		String stopsFilePath = dlg.getStopsFileLb().getText();
-		String wayFilePath = dlg.getWayFileLb().getText();
+		String stopsFilePath = "D://Diplomová práca//TariffZones//DP data//exportedStopsZA.csv";
+		String wayFilePath = "D://Diplomová práca//TariffZones//DP data//exportedWaysZA.csv";
 		
 		ArrayList<Stop> stops = null;
 		ArrayList<Way> ways = null;
@@ -560,9 +555,25 @@ public class TariffZonesController {
 		model.getNetwork().setStops(stops);
 		model.getNetwork().setWays(ways);
 	
-		model.setUnsavedStops(model.getNetworkStops());
-		model.setUnsavedWays(model.getNetworkWays());
+//		model.setUnsavedStops(model.getNetworkStops());
+//		model.setUnsavedWays(model.getNetworkWays());
 		
+		if (model.getNetworkStops() != null || !model.getNetworkStops().isEmpty()) {
+			view.getMapViewer().setAddressLocation(((ArrayList<Stop>)model.getNetworkStops()).get(0).getPosition());
+			view.getMapViewer().setZoom(9);
+		}
+		
+		if (view.getStopCb().getSelectedItem().toString().equals(view.STOPS)) {
+			fillTableWithStops(view.getStopTable(), model.getNetworkStops());
+			fillTableWithWays(view.getWayTable(), model.getNetworkWays());
+		}			
+		if (view.getWayCb().getSelectedItem().toString().equals(view.STOPS)) {
+			fillTableWithStops(view.getWayTable(), model.getNetworkStops());
+			fillTableWithWays(view.getStopTable(), model.getNetworkWays());
+		}
+
+		view.getZoneIF().setVisible(false);
+		painterManager = new PainterManager(view.getMapViewer());
 		painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
 		painterManager.getWayPainter().setWays(new HashSet<>(model.getNetworkWays()));
 		painterManager.repaintPainters();
@@ -572,6 +583,22 @@ public class TariffZonesController {
 	
 	public void deleteNetwork(String networkName) {
 		model.deleteNetwork(networkName);
+	}
+	
+	public void cleanMap() {
+		view.getZoneIF().setVisible(false);
+		painterManager.getPolygonPainter().setPolygons(null);
+		painterManager.repaintPainters();
+	}
+	
+	public void createNew() {
+		view.getZoneIF().setVisible(false);
+		painterManager = new PainterManager(view.getMapViewer());
+		painterManager.repaintPainters();
+		model.setNetwork(new Network(0, "", "", ""));
+		model.getNetwork().setStops(null);
+		model.getNetwork().setWays(null);
+		updateBtns();
 	}
 	
 	public boolean connectToDB() {
@@ -966,7 +993,7 @@ public class TariffZonesController {
 		if (stops == null || stops.isEmpty()) {
 			return;
 		}
-		view.getMapViewer().setAddressLocation(stops.get(0).getPosition());
+//		view.getMapViewer().setAddressLocation(stops.get(0).getPosition());
 		painterManager.getSelectedWaypointPainter().setWaypoints(new HashSet<>(stops));
 		painterManager.repaintPainters();
 	}
@@ -975,7 +1002,7 @@ public class TariffZonesController {
 		if (ways == null || ways.isEmpty()) {
 			return;
 		}
-		view.getMapViewer().setAddressLocation(ways.get(0).getStartPosition());
+//		view.getMapViewer().setAddressLocation(ways.get(0).getStartPosition());
 		painterManager.getSelectedWayPainter().setWays(new HashSet<>(ways));
 		painterManager.repaintPainters();
 	}

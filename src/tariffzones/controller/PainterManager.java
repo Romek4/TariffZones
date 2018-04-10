@@ -63,7 +63,7 @@ public class PainterManager {
 		painters.add(polygonPainter);
 		painters.add(selectedWaypointPainter);
 		painters.add(waypointPainter);
-//		painters.add(wayPainter);
+		painters.add(wayPainter);
 		painters.add(selectedWayPainter);
 		
 		compoundPainter = new CompoundPainter<>((List<? extends Painter<Painter<JXMapViewer>>>) painters);

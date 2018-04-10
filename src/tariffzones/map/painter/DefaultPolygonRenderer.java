@@ -37,39 +37,39 @@ public class DefaultPolygonRenderer implements Renderer<Zone> {
 		
 		ArrayList<GeoPosition> points;
 		
-		for(GeoPosition gp : zone.getGeoPositions()) {
-			Point2D pt = null;
+//		for(GeoPosition gp : zone.getGeoPositions()) {
+//			Point2D pt = null;
+//			
+//			pt = map.getTileFactory().geoToPixel(gp, map.getZoom());
+//			poly.addPoint((int)pt.getX(), (int)pt.getY());
+//		}
+		
+		for (Stop stop : zone.getStopsInZone()) {
+			points = new ArrayList<>();
+			poly = new java.awt.Polygon();
 			
-			pt = map.getTileFactory().geoToPixel(gp, map.getZoom());
-			poly.addPoint((int)pt.getX(), (int)pt.getY());
-		}
+			for (Site site : stop.getRegionSites()) {
+				points.add(new GeoPosition(site.getX(), site.getY()));
+			}
+			
+			if (points.size() > 2) {
+				for (GeoPosition geoPosition : hull.getConvexHull(points)) {
+
+					Point2D p = map.getTileFactory().geoToPixel(new GeoPosition(geoPosition.getLatitude(), geoPosition.getLongitude()), map.getZoom());
+					poly.addPoint((int)p.getX(), (int)p.getY());
+					
+				}
+				
+				Color color = zone.getColor();
+				g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 197));
+				g.fill(poly); 
+				g.draw(poly); 
 		
-//		for (Stop stop : zone.getStopsInZone()) {
-//			points = new ArrayList<>();
-//			poly = new java.awt.Polygon();
-//			
-//			for (Site site : stop.getRegionSites()) {
-//				points.add(new GeoPosition(site.getX(), site.getY()));
-//			}
-//			
-//			if (points.size() > 2) {
-//				for (GeoPosition geoPosition : hull.getConvexHull(points)) {
-//
-//					Point2D p = map.getTileFactory().geoToPixel(new GeoPosition(geoPosition.getLatitude(), geoPosition.getLongitude()), map.getZoom());
-//					poly.addPoint((int)p.getX(), (int)p.getY());
-//					
-//				}
-//				
-//				Color color = zone.getColor();
-//				g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 197));
-//				g.fill(poly); 
-//				g.draw(poly); 
-		
-			Color color = zone.getColor();
-			g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 197));
-			g.fill(poly); 
-			g.draw(poly);
-//			}
+//			Color color = zone.getColor();
+//			g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 197));
+//			g.fill(poly); 
+//			g.draw(poly);
+			}
 		}
 		
 //		GeoPosition west = new GeoPosition(0, 180);
@@ -124,7 +124,7 @@ public class DefaultPolygonRenderer implements Renderer<Zone> {
 //			poly.addPoint((int)pt.getX(),(int)pt.getY());
 //		}
 		
-//	}
+	}
 	
 	private void sortGeoPositions(ArrayList<GeoPosition> geoPositions) {
 		GeoPosition west = new GeoPosition(180, 180);

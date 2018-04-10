@@ -9,7 +9,6 @@ import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.viewer.GeoPosition;
 
 import voronoi.Edge;
-import voronoi.StdDraw;
 
 public class VoronoiEdgeRenderer implements Renderer<Edge> {
 

@@ -1,11 +1,7 @@
 package tariffzones.model;
 
-import java.awt.Point;
-import java.awt.geom.Point2D;
 import java.util.ArrayList;
 
-import org.jxmapviewer.JXMapKit;
-import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.viewer.GeoPosition;
 import org.jxmapviewer.viewer.Waypoint;
 
@@ -24,15 +20,6 @@ public class Stop extends Site implements Node, Waypoint, ObjectState {
 	private Zone zone;
 	private Network network;
 	private State state = State.DEFAULT;
-	
-	public Stop(Network network, int number, String name, int numberOfHabitants, GeoPosition geoPosition) {
-		super(geoPosition.getLatitude(), geoPosition.getLongitude());
-		this.network = network;
-		this.number = number;
-		this.name = name;
-		this.numberOfCustomers = numberOfHabitants;
-		this.geoPosition = geoPosition;
-	}
 	
 	public Stop(Network network, int number, String name, int numberOfHabitants, double latitude, double longitude) {
 		super(latitude, longitude);
@@ -173,17 +160,17 @@ public class Stop extends Site implements Node, Waypoint, ObjectState {
 		this.state = state;
 	}
 
-	@Override
-	public double getX() {
-		return roundDouble(this.getLongitude());
-//		return (GeoToPointHelpConverter.convertGeoPositionToPoint(this.getPosition())).getX();
-	}
-
-	@Override
-	public double getY() {
-		return roundDouble(this.getLatitude());
-//		return (GeoToPointHelpConverter.convertGeoPositionToPoint(this.getPosition())).getY();
-	}
+//	@Override
+//	public double getX() {
+//		return roundDouble(this.getLongitude());
+////		return (GeoToPointHelpConverter.convertGeoPositionToPoint(this.getPosition())).getX();
+//	}
+//
+//	@Override
+//	public double getY() {
+//		return roundDouble(this.getLatitude());
+////		return (GeoToPointHelpConverter.convertGeoPositionToPoint(this.getPosition())).getY();
+//	}
 	
 	private double roundDouble(double d) {
 		return(double)Math.round(d * 1000000000000d) / 1000000000000d;

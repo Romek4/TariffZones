@@ -1,23 +1,14 @@
 package tariffzones.gui;
 
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
+import java.awt.Color;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Image;
+import java.awt.GridLayout;
 import java.awt.Insets;
-import java.io.FileInputStream;
-import java.io.IOException;
 
-import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
 
 import tariffzones.tariffzonesprocessor.greedy.Zone;
 
@@ -25,7 +16,7 @@ public class ZoneInfoPl extends JPanel {
 	private Zone zone;
 	
 	private JLabel colorLabel;
-	private JLabel infoLabel;
+	private JPanel infoPanel;
 	
 	public ZoneInfoPl(Zone zone) {
 		super();
@@ -35,29 +26,9 @@ public class ZoneInfoPl extends JPanel {
 
 	private void initialize() {
 		this.setBorder(BorderFactory.createRaisedBevelBorder());
-		this.setLayout(new GridBagLayout());
-		
-		GridBagConstraints gbc = new GridBagConstraints();
-		gbc.insets = new Insets(0, 0, 0, 5);
-		gbc.fill = GridBagConstraints.BOTH;
-		gbc.weightx = 0.3;
-		gbc.weighty = 0.5;
-				
-		gbc.gridx = 0;
-		gbc.gridy = 0;
-		gbc.gridheight = 2;
-		this.add(getColorLabel(), gbc);
-		
-		gbc.weightx = 0.7;
-		gbc.gridheight = 1;
-		
-		gbc.gridx = 1;
-		gbc.gridy = 0;
-		this.add(new JLabel("e = " + String.format("%.3f", zone.getE())), gbc);
-		
-		gbc.gridx = 1;
-		gbc.gridy = 1;
-		this.add(getInfoLabel(), gbc);
+		this.setLayout(new GridLayout(1, 2, 5, 0));
+		this.add(getColorLabel());
+		this.add(getInfoPanel());
 	}
 	
 	private JLabel getColorLabel() {
@@ -69,19 +40,25 @@ public class ZoneInfoPl extends JPanel {
 		return colorLabel;
 	}
 	
-	private JLabel getInfoLabel() {
-		if (infoLabel == null) {
-			infoLabel = new JLabel();
+	public JPanel getInfoPanel() {
+		if (infoPanel == null) {
+			infoPanel = new JPanel(new GridLayout(2, 1));
+			infoPanel.setBackground(Color.WHITE);
 			
+			infoPanel.add(new JLabel("e = " + String.format("%.3f", zone.getE())));
+			
+			JLabel infoLabel = new JLabel();
 			int stopsInZone = zone.getStopsInZone().size();
 			if (stopsInZone == 1) {
-				infoLabel.setText(stopsInZone + " stop in zone");
+				infoLabel.setText(String.format("%d", stopsInZone) + " stop in zone");
 			}
 			else {
-				infoLabel.setText(stopsInZone + " stops in zone");
+				infoLabel.setText(String.format("%d", stopsInZone) + " stops in zone");
 			}
+			
+			infoPanel.add(infoLabel);
 		}
-		return infoLabel;
+		return infoPanel;
 	}
 	
 }

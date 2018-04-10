@@ -28,7 +28,7 @@ public class Network {
 	}
 	
 	public boolean addWay(Way way) {
-		if (ways.add(way)) {
+		if (getWays().add(way)) {
 			return true;
 		}
 		return false;
@@ -60,7 +60,7 @@ public class Network {
 	}
 	
 	public Stop findStop(int stopNumber) {
-		for (Node node : stops) {
+		for (Node node : getStops()) {
 			Stop stop = (Stop) node;
 			if (stop.getNumber() == stopNumber) {
 				return stop;
@@ -97,10 +97,16 @@ public class Network {
 	}
 	
 	public ArrayList<Stop> getStops() {
+		if (stops == null) {
+			stops = new ArrayList<>();
+		}
 		return stops;
 	}
 	
 	public ArrayList<Way> getWays() {
+		if (ways == null) {
+			ways = new ArrayList<>();
+		}
 		return ways;
 	}
 	

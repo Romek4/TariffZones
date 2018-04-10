@@ -20,8 +20,10 @@ public class ZoneCellRenderer implements TableCellRenderer {
 		
 		if (isSelected) {
 			zoneInfoPl.setBackground(table.getSelectionBackground());
+			zoneInfoPl.getInfoPanel().setBackground(table.getSelectionBackground());
 	    } else {
 	    	zoneInfoPl.setBackground(table.getBackground());
+	    	zoneInfoPl.getInfoPanel().setBackground(table.getBackground());
 	    }
 		
 	    return zoneInfoPl;

@@ -32,7 +32,8 @@ public class DataImporter {
 	
 	public ArrayList<Node> readStops(String fileName) throws IOException, FileNotFoundException {
 		InputStreamReader fileReader = new InputStreamReader(new FileInputStream(fileName), "UTF-8");
-		CSVReader csvReader = new CSVReaderBuilder(fileReader).build();
+		CSVReader csvReader = new CSVReader(fileReader, ';');
+
 		String[] nextLine;
 		
         ArrayList<Node> stops = new ArrayList<>();
@@ -54,7 +55,7 @@ public class DataImporter {
 	
 	public ArrayList<Way> readWays(String fileName, ArrayList<Stop> busStops) throws IOException, FileNotFoundException {
 		InputStreamReader fileReader = new InputStreamReader(new FileInputStream(fileName), "UTF-8");
-		CSVReader csvReader = new CSVReaderBuilder(fileReader).build();
+		CSVReader csvReader = new CSVReader(fileReader, ';');//new CSVReaderBuilder(fileReader).build();
 		String[] nextLine;
 		
         ArrayList<Way> ways = new ArrayList<>();
@@ -92,7 +93,7 @@ public class DataImporter {
 		
 		Writer writer = Files.newBufferedWriter(Paths.get(fileName));
         CSVWriter csvWriter = new CSVWriter(writer,
-                CSVWriter.DEFAULT_SEPARATOR,
+                ';',
                 CSVWriter.NO_QUOTE_CHARACTER,
                 CSVWriter.DEFAULT_ESCAPE_CHARACTER,
                 CSVWriter.DEFAULT_LINE_END);
@@ -120,7 +121,7 @@ public class DataImporter {
 		
 		Writer writer = Files.newBufferedWriter(Paths.get(fileName));
         CSVWriter csvWriter = new CSVWriter(writer,
-                CSVWriter.DEFAULT_SEPARATOR,
+        		';',
                 CSVWriter.NO_QUOTE_CHARACTER,
                 CSVWriter.DEFAULT_ESCAPE_CHARACTER,
                 CSVWriter.DEFAULT_LINE_END);
