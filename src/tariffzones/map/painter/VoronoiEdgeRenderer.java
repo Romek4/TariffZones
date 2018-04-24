@@ -8,7 +8,7 @@ import java.awt.geom.Point2D;
 import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.viewer.GeoPosition;
 
-import voronoi.Edge;
+import tariffzones.processor.voronoi.Edge;
 
 public class VoronoiEdgeRenderer implements Renderer<Edge> {
 
@@ -16,7 +16,7 @@ public class VoronoiEdgeRenderer implements Renderer<Edge> {
 	}
 
 	@Override
-	public void paintO(Graphics2D g, JXMapViewer map, Edge e) {
+	public void paintObject(Graphics2D g, JXMapViewer map, Edge e) {
 
 		if (e.getStart() == null || e.getEnd() == null) {
 			return;

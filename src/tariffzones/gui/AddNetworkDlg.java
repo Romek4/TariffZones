@@ -22,8 +22,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import tariffzones.controller.OpenNetworkFromFilesDlgController;
-
 public class AddNetworkDlg extends JPanel {
 
 	private JLabel iconLabel;

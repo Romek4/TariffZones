@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.painter.CompoundPainter;
@@ -11,6 +12,9 @@ import org.jxmapviewer.painter.Painter;
 import org.jxmapviewer.viewer.DefaultWaypointRenderer;
 import org.jxmapviewer.viewer.WaypointPainter;
 
+import tariffzones.basicobjects.Network;
+import tariffzones.basicobjects.Stop;
+import tariffzones.basicobjects.Zone;
 import tariffzones.map.painter.DefaultPolygonRenderer;
 import tariffzones.map.painter.DefaultWayRenderer;
 import tariffzones.map.painter.PolygonPainter;
@@ -18,9 +22,6 @@ import tariffzones.map.painter.StopWaypointRenderer;
 import tariffzones.map.painter.VoronoiEdgePainter;
 import tariffzones.map.painter.Way;
 import tariffzones.map.painter.WayPainter;
-import tariffzones.model.Network;
-import tariffzones.model.Stop;
-import tariffzones.tariffzonesprocessor.greedy.Zone;
 
 public class PainterManager {
 	private JXMapViewer map;
@@ -129,5 +130,14 @@ public class PainterManager {
 			return stopWaypointRenderer.getEllipseDiameter();
 		}
 		return 0;
+	}
+
+	public void removeStopFromZoneWaypointPainter(Stop stop) {
+		for (WaypointPainter<Stop> painter : zoneWaypointPainters) {
+			if (painter.getWaypoints().contains(stop)) {
+				painter.setWaypoints(new HashSet<>(stop.getZone().getStopsInZone()));
+			}
+		}
+		
 	}
 }

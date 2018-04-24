@@ -46,6 +46,8 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.RowFilter;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableModel;
@@ -59,14 +61,13 @@ import org.jxmapviewer.viewer.TileFactoryInfo;
 import org.jxmapviewer.viewer.GeoPosition;
 import org.jxmapviewer.viewer.TileFactory;
 
+import tariffzones.basicobjects.Network;
+import tariffzones.basicobjects.StopTableModel;
+import tariffzones.basicobjects.WayTableModel;
+import tariffzones.basicobjects.Zone;
+import tariffzones.basicobjects.ZoneTableModel;
 import tariffzones.controller.TariffZonesController;
 import tariffzones.map.MapViewer;
-import tariffzones.model.GeoToPointHelpConverter;
-import tariffzones.model.Network;
-import tariffzones.model.StopTableModel;
-import tariffzones.model.WayTableModel;
-import tariffzones.model.ZoneTableModel;
-import tariffzones.tariffzonesprocessor.greedy.Zone;
 
 public class TariffZonesView extends JFrame {
 	
@@ -124,7 +125,7 @@ public class TariffZonesView extends JFrame {
 	private boolean makeAWay = false;
 	private Point startPoint = null;
 	private Point endPoint = null;
-	private TariffZonesController tariffZonesController;
+	private TariffZonesController controller;
 	
 	private ListSelectionListener listSelectionListener;
 	private MouseListener mapViewerMouseListener;
@@ -134,12 +135,12 @@ public class TariffZonesView extends JFrame {
 	private ComponentListener mapViewerComponentListener;
 	
 	private static final String DEFAULT_INFO_MSG = "Use wheel for zoom. Drag left mouse button to move.";
-	private static final String MAKEPOINT_INFO_MSG = "Use left mouse button to point on the map.";
-	private static final String MAKEWAY_INFO_MSG = "Use left mouse button to select two stops the new way be between.";
+	public static final String MAKEPOINT_INFO_MSG = "Use left mouse button to point on the map or ESC to cancel.";
+	private static final String MAKEWAY_INFO_MSG = "Use left mouse button to select two stops the new way be between or ESC to cancel.";
 	
 	public TariffZonesView() {
-		tariffZonesController = new TariffZonesController();
-		tariffZonesController.setView(this);
+		controller = new TariffZonesController();
+		controller.setView(this);
 		
 		this.setLayout(new GridBagLayout());
 		this.setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -154,7 +155,7 @@ public class TariffZonesView extends JFrame {
 //		}
 		
 		initializeComponents();
-		tariffZonesController.activate();
+		controller.activate();
 	}
 
 	private void initializeComponents() {
@@ -192,7 +193,7 @@ public class TariffZonesView extends JFrame {
 		GridBagConstraints toolBoxPanelConstraints = new GridBagConstraints();
 		toolBoxPanelConstraints.gridx = 0;
 		toolBoxPanelConstraints.gridy = 0;
-		toolBoxPanelConstraints.weightx = 1;
+		toolBoxPanelConstraints.weightx = 0.1;
 		toolBoxPanelConstraints.weighty = 0.05;
 		toolBoxPanelConstraints.fill = GridBagConstraints.BOTH;
 		leftPanel.add(getToolBoxPanel(), toolBoxPanelConstraints);
@@ -213,7 +214,7 @@ public class TariffZonesView extends JFrame {
 		GridBagConstraints rightPanelgbc = new GridBagConstraints();
 		rightPanelgbc.gridx = 2;
 		rightPanelgbc.gridy = 1;
-		rightPanelgbc.weightx = 0.9;
+		rightPanelgbc.weightx = 0.8;
 		rightPanelgbc.weighty = 1;
 		rightPanelgbc.fill = GridBagConstraints.BOTH;
 		
@@ -221,7 +222,7 @@ public class TariffZonesView extends JFrame {
 		mapViewerConstraints.gridx = 0;
 		mapViewerConstraints.gridy = 0;
 		mapViewerConstraints.weighty = 0.9;
-		mapViewerConstraints.weightx = 0.9;
+		mapViewerConstraints.weightx = 0.8;
 		mapViewerConstraints.fill = GridBagConstraints.BOTH;
 		rightPanel.add(getMapViewer(), mapViewerConstraints);
 	
@@ -229,7 +230,7 @@ public class TariffZonesView extends JFrame {
 		getMapViewer().add(getMapToolboxPl());
 		
 		getTileServersCb().setBounds(170, 10, 150, 20);
-//		getMapViewer().add(getTileServersCb());
+		getMapViewer().add(getTileServersCb());
 		
 		getZoneIF().setBounds(10, 100, 450, 250);
 		getMapViewer().add(getZoneIF());
@@ -257,7 +258,7 @@ public class TariffZonesView extends JFrame {
 		GridBagConstraints splitPaneGbc = new GridBagConstraints();
 		splitPaneGbc.gridx = 1;
 		splitPaneGbc.gridy = 1;
-		splitPaneGbc.weightx = 1;
+		splitPaneGbc.weightx = 0.1;
 		splitPaneGbc.weighty = 1;
 		splitPaneGbc.fill = GridBagConstraints.BOTH;
 		this.add(splitPane, splitPaneGbc);
@@ -438,16 +439,16 @@ public class TariffZonesView extends JFrame {
 								else if (makeAWay) {
 									//pick first stop
 									if (startPoint == null) {
-										getInfoLabel().setText("Click on begining stop of new way");
+										getInfoLabel().setText("Click on begining stop of new way or ESC to cancel.");
 										if (getController().checkMousePositionForStop(e.getPoint()) != null) {
 											startPoint = e.getPoint();
-											getInfoLabel().setText("Pick second stop");
+											getInfoLabel().setText("Pick second stop or ESC to cancel.");
 										}
 										return;
 									}
 									//pick second stop
 									if (endPoint == null) {
-										getInfoLabel().setText("Click on ending stop of new way");
+										getInfoLabel().setText("Click on ending stop of new way or ESC to cancel.");
 										if (getController().checkMousePositionForStop(e.getPoint()) != null) {
 											endPoint = e.getPoint();
 										}
@@ -526,9 +527,16 @@ public class TariffZonesView extends JFrame {
 								getWayTablePopupMenu().show(getWayTable(), e.getX(), e.getY());
 							}
 						}
+						
+						getInfoLabel().setText(DEFAULT_INFO_MSG);
 
 					} catch(Exception ex) {
-						ex.printStackTrace();
+//						ex.printStackTrace();
+						makeAPoint = false;
+						makeAWay = false;
+						startPoint = null;
+						endPoint = null;
+						getInfoLabel().setText(DEFAULT_INFO_MSG);
 					}
 				}
 			};
@@ -1110,7 +1118,6 @@ public class TariffZonesView extends JFrame {
 			mapViewer.setZoom(15);
 			mapViewer.setAddressLocation(slovakia);
 			
-			GeoToPointHelpConverter.mapViewer = mapViewer;
 		}
 		return mapViewer;
 	}
@@ -1153,7 +1160,7 @@ public class TariffZonesView extends JFrame {
 		return wayMapPopupMenu;
 	}
 	
-	private JMenuItem getExportStopsToCSVMenuItem() {
+	public JMenuItem getExportStopsToCSVMenuItem() {
 		if (exportStopsToCSVMenuItem == null) {
 			exportStopsToCSVMenuItem = new JMenuItem("Export Stops To CSV");
 			Image img;
@@ -1167,7 +1174,7 @@ public class TariffZonesView extends JFrame {
 		return exportStopsToCSVMenuItem;
 	}
 	
-	private JMenuItem getExportWaysToCSVMenuItem() {
+	public JMenuItem getExportWaysToCSVMenuItem() {
 		if (exportWaysToCSVMenuItem == null) {
 			exportWaysToCSVMenuItem = new JMenuItem("Export Ways To CSV");
 			Image img;
@@ -1329,10 +1336,10 @@ public class TariffZonesView extends JFrame {
 	}
 	
 	public TariffZonesController getController() {
-		if (tariffZonesController == null) {
-			tariffZonesController = new TariffZonesController();
+		if (controller == null) {
+			controller = new TariffZonesController();
 		}
-		return tariffZonesController;
+		return controller;
 	}
 	
 	public static void main(String[] args) {

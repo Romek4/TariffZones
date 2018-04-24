@@ -35,7 +35,7 @@ public class WayPainter<W extends Way> extends AbstractPainter<JXMapViewer> {
 
 		for (W w : getWays())
 		{
-			wayRenderer.paintO(g, map, w);
+			wayRenderer.paintObject(g, map, w);
 		}
 
 		g.translate(viewportBounds.getX(), viewportBounds.getY());

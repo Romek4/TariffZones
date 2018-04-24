@@ -35,7 +35,7 @@ public class PolygonPainter<Zone> extends AbstractPainter<JXMapViewer> {
 
 		for (Zone p : getPolygons())
 		{
-			polygonRenderer.paintO(g, map, p);
+			polygonRenderer.paintObject(g, map, p);
 		}
 
 		g.translate(viewportBounds.getX(), viewportBounds.getY());

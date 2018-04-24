@@ -8,7 +8,7 @@ import java.awt.geom.Point2D;
 
 import org.jxmapviewer.JXMapViewer;
 
-public class DefaultWayRenderer implements Renderer<tariffzones.model.Way> {
+public class DefaultWayRenderer implements Renderer<tariffzones.basicobjects.Way> {
 
 	private Color color = Color.BLACK;; 
 	private int lineStroke = 1;
@@ -21,7 +21,7 @@ public class DefaultWayRenderer implements Renderer<tariffzones.model.Way> {
 	}
 
 	@Override
-	public void paintO(Graphics2D g, JXMapViewer map, tariffzones.model.Way way) {
+	public void paintObject(Graphics2D g, JXMapViewer map, tariffzones.basicobjects.Way way) {
 		Point2D startPoint = map.getTileFactory().geoToPixel(way.getStartPosition(), map.getZoom());
 		Point2D endPoint = map.getTileFactory().geoToPixel(way.getEndPosition(), map.getZoom());
 		

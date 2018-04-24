@@ -8,21 +8,16 @@ import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.List;
 
 import javax.imageio.ImageIO;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
-
-import tariffzones.controller.OpenNetworkFromFilesDlgController;
 
 public class OpenNetworkFromFilesDlg extends JPanel {
 	private JLabel iconLabel;
@@ -32,13 +27,10 @@ public class OpenNetworkFromFilesDlg extends JPanel {
 	private JButton waysBtn;
 	
 	private ActionListener actionListener;
-	private OpenNetworkFromFilesDlgController controller;
 
 	public OpenNetworkFromFilesDlg() {
 		super();
 		initialize();
-		getController().setView(this);
-		getController().activate();
 	}
 
 	private void initialize() {
@@ -140,16 +132,6 @@ public class OpenNetworkFromFilesDlg extends JPanel {
 		}
 		return stopsBtn;
 	}
-
-	public void registryListeners() {
-		getStopsBtn().addActionListener(getActionListener());
-		getWaysBtn().addActionListener(getActionListener());
-	}
-	
-	public void unregistryListeners() {
-		getStopsBtn().removeActionListener(getActionListener());
-		getWaysBtn().removeActionListener(getActionListener());
-	}
 	
 	private ActionListener getActionListener() {
 		if (actionListener == null) {
@@ -158,10 +140,10 @@ public class OpenNetworkFromFilesDlg extends JPanel {
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					if (e.getSource().equals(getStopsBtn())) {
-						getController().selectFile(getStopsFileLb());
+						selectFile(getStopsFileLb());
 					}
 					else if (e.getSource().equals(getWaysBtn())) {
-						getController().selectFile(getWayFileLb());
+						selectFile(getWayFileLb());
 					}
 				}
 			};
@@ -169,11 +151,16 @@ public class OpenNetworkFromFilesDlg extends JPanel {
 		return actionListener;
 	}
 	
-	private OpenNetworkFromFilesDlgController getController() {
-		if (controller == null) {
-			controller = new OpenNetworkFromFilesDlgController();
+	private void selectFile(JLabel label) {
+		JFileChooser fileChooser = new JFileChooser();
+		int returnVal = fileChooser.showOpenDialog(this.getParent());
+		
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			File file = fileChooser.getSelectedFile();
+			if (file != null) {
+				label.setText(file.getAbsolutePath());
+			}
 		}
-		return controller;
 	}
 	
 	public void setIconLabelImg(Image img) {
@@ -182,15 +169,5 @@ public class OpenNetworkFromFilesDlg extends JPanel {
 	
 	public void setIconLabelText(String text) {
 		getIconLabel().setText(text);
-	}
-	
-	public void showDlg() {
-//		this.setModal(true);
-		this.setVisible(true);
-	}
-	
-	public static void main(String[] args) {
-		OpenNetworkFromFilesDlg dlg = new OpenNetworkFromFilesDlg();
-		dlg.showDlg();
 	}
 }

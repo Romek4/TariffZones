@@ -10,7 +10,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import tariffzones.tariffzonesprocessor.greedy.Zone;
+import tariffzones.basicobjects.Zone;
 
 public class ZoneInfoPl extends JPanel {
 	private Zone zone;

@@ -14,7 +14,7 @@ import javax.imageio.ImageIO;
 import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.viewer.WaypointRenderer;
 
-import tariffzones.model.Stop;
+import tariffzones.basicobjects.Stop;
 
 public class StopWaypointRenderer implements WaypointRenderer<Stop> {
 

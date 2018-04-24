@@ -9,7 +9,7 @@ import java.util.Set;
 import org.jxmapviewer.JXMapViewer;
 import org.jxmapviewer.painter.AbstractPainter;
 
-import voronoi.Edge;
+import tariffzones.processor.voronoi.Edge;
 
 public class VoronoiEdgePainter extends AbstractPainter<JXMapViewer> {
 	
@@ -33,7 +33,7 @@ public class VoronoiEdgePainter extends AbstractPainter<JXMapViewer> {
 
 		for (Edge edge : edges)
 		{
-			voronoiEdgeRenderer.paintO(g, map, edge);
+			voronoiEdgeRenderer.paintObject(g, map, edge);
 		}
 
 		g.translate(viewportBounds.getX(), viewportBounds.getY());
