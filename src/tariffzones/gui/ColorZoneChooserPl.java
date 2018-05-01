@@ -51,6 +51,7 @@ public class ColorZoneChooserPl extends JPanel {
 	private JLabel odMatrixLb;
 	private JLabel pricesLb;
 	private JCheckBox useODMatrixChb;
+	private JCheckBox useCountOfStopsForPricesChb;
 
 	private JRadioButton algWithNoPricesRb;
 	private JRadioButton algWithPricesRb;
@@ -128,33 +129,37 @@ public class ColorZoneChooserPl extends JPanel {
 		gbc.gridy = 5;
 		this.add(getPricesBtn(), gbc);
 		
-		gbc.gridwidth = 2;
 		gbc.gridx = 0;
 		gbc.gridy = 6;
+		this.add(getUseCountOfStopsForPricesChb(), gbc);
+		
+		gbc.gridwidth = 2;
+		gbc.gridx = 0;
+		gbc.gridy = 7;
 		this.add(getE1Btn(), gbc);
 		
 		gbc.gridx = 0;
-		gbc.gridy = 7;
+		gbc.gridy = 8;
 		this.add(getE2Btn(), gbc);
 		
 		gbc.gridx = 0;
-		gbc.gridy = 8;
+		gbc.gridy = 9;
 		this.add(getE3Btn(), gbc);
 		
 		gbc.gridwidth = 1;
 		gbc.gridx = 0;
-		gbc.gridy = 9;
+		gbc.gridy = 10;
 		this.add(getUseDistanceRb(), gbc);
 		
 		gbc.gridx = 1;
-		gbc.gridy = 9;
+		gbc.gridy = 10;
 		this.add(getUseTimeLengthRb(), gbc);
 		
 		gbc.gridx = 0;
-		gbc.gridy = 10;
+		gbc.gridy = 11;
 		this.add(getUseODMatrixChb(), gbc);
 		
-		gbc.gridx = 0;
+		gbc.gridx = 1;
 		gbc.gridy = 11;
 		this.add(getCountODMatrixChb(), gbc);
 		
@@ -232,6 +237,7 @@ public class ColorZoneChooserPl extends JPanel {
 		if (useODMatrixChb == null) {
 			useODMatrixChb = new JCheckBox("Use OD-matrix");
 			useODMatrixChb.setSelected(false);
+			useODMatrixChb.setEnabled(false);
 			useODMatrixChb.addItemListener(new ItemListener() {
 				
 				@Override
@@ -250,6 +256,15 @@ public class ColorZoneChooserPl extends JPanel {
 			});
 		}
 		return useODMatrixChb;
+	}
+	
+	public JCheckBox getUseCountOfStopsForPricesChb() {
+		if (useCountOfStopsForPricesChb == null) {
+			useCountOfStopsForPricesChb = new JCheckBox("Price for count of stops traveled");
+			useCountOfStopsForPricesChb.setSelected(false);
+			useCountOfStopsForPricesChb.setEnabled(false);
+		}
+		return useCountOfStopsForPricesChb;
 	}
 	
 	public JCheckBox getUsePricesChb() {
@@ -590,6 +605,7 @@ public class ColorZoneChooserPl extends JPanel {
 						getPricesLb().setEnabled(true);
 						getPricesBtn().setEnabled(true);
 						getUseODMatrixChb().setEnabled(true);
+						getUseCountOfStopsForPricesChb().setEnabled(true);
 					}
 					else {
 						getF1Lb().setEnabled(false);
@@ -599,6 +615,7 @@ public class ColorZoneChooserPl extends JPanel {
 						getPricesLb().setEnabled(false);
 						getPricesBtn().setEnabled(false);
 						getUseODMatrixChb().setEnabled(false);
+						getUseCountOfStopsForPricesChb().setEnabled(false);
 					}
 				}
 			});

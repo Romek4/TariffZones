@@ -4,6 +4,7 @@ package tariffzones.processor.voronoi;
 
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.PrimitiveIterator.OfDouble;
 import java.util.ArrayList;
 
 public class Voronoi {
@@ -109,37 +110,6 @@ public class Voronoi {
 		edges.add(southBorder);
 		
 		return edges;
-	}
-	
-	private void checkCornerRegions() {
-		for (Site site : westSites) {
-			if (northSites.contains(site)) {
-				site.addRegionSite(northBorder.getStart());
-			}
-			else if (southSites.contains(site)) {
-				site.addRegionSite(southBorder.getStart());
-			}
-			else if (eastSites.contains(site)) {
-				if (site.y < borderMaxY/2) {
-					site.addRegionSite(northBorder.getStart());
-					site.addRegionSite(northBorder.getEnd());
-				}
-				else {
-					site.addRegionSite(southBorder.getStart());
-					site.addRegionSite(southBorder.getEnd());
-				}
-			}
-		}
-		
-		for (Site site : eastSites) {
-			if (northSites.contains(site)) {
-				site.addRegionSite(northBorder.getEnd());
-			}
-			else if (southSites.contains(site)) {
-				site.addRegionSite(southBorder.getEnd());
-			}
-		}
-		
 	}
 
 	// end all unfinished edges
@@ -472,6 +442,89 @@ public class Voronoi {
 	
 	private double roundDouble(double d) {
 		return(double)Math.round(d * 100000000000d) / 100000000000d;
+	}
+	
+	private void checkCornerRegions() {
+		for (Site site : westSites) {
+			if (northSites.contains(site)) {
+				site.addRegionSite(northBorder.getStart());
+			}
+			else if (southSites.contains(site)) {
+				site.addRegionSite(southBorder.getStart());
+			}
+			else if (eastSites.contains(site)) {
+				if (site.equals(getNorthest(eastSites))) {
+					site.addRegionSite(northBorder.getEnd());
+					site.addRegionSite(northBorder.getStart());
+				}
+				else if (site.equals(getSouthest(eastSites))) {
+					site.addRegionSite(southBorder.getEnd());
+					site.addRegionSite(southBorder.getStart());
+				}
+			}
+		}
+		
+		for (Site site : eastSites) {
+			if (northSites.contains(site)) {
+				site.addRegionSite(northBorder.getEnd());
+			}
+			else if (southSites.contains(site)) {
+				site.addRegionSite(southBorder.getEnd());
+			}
+		}
+		
+		for (Site site : northSites) {
+			if (southSites.contains(site)) {
+				if (site.equals(getWestest(northSites))) {
+					site.addRegionSite(westBorder.getEnd());
+					site.addRegionSite(westBorder.getStart());
+				}
+				else if (site.equals(getEastest(northSites))) {
+					site.addRegionSite(eastBorder.getEnd());
+					site.addRegionSite(eastBorder.getStart());
+				}
+			}
+		}
+	}
+	
+	private Site getNorthest(ArrayList<Site> eastSites) {
+		Site northestSite = eastSites.get(0);
+		for (Site site : eastSites) {
+			if (site.getX() > northestSite.getX()) {
+				northestSite = site;
+			}
+		}
+		return northestSite;
+	}
+	
+	private Site getSouthest(ArrayList<Site> eastSites) {
+		Site southestSite = eastSites.get(0);
+		for (Site site : eastSites) {
+			if (site.getX() > southestSite.getX()) {
+				southestSite = site;
+			}
+		}
+		return southestSite;
+	}
+	
+	private Site getWestest(ArrayList<Site> northSites) {
+		Site westestSite = northSites.get(0);
+		for (Site site : northSites) {
+			if (site.getY() < westestSite.getY()) {
+				westestSite = site;
+			}
+		}
+		return westestSite;
+	}
+	
+	private Site getEastest(ArrayList<Site> northSites) {
+		Site eastestSite = northSites.get(0);
+		for (Site site : northSites) {
+			if (site.getY() > eastestSite.getY()) {
+				eastestSite = site;
+			}
+		}
+		return eastestSite;
 	}
 	
 }

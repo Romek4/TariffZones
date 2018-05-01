@@ -42,6 +42,10 @@ public class WayPainter<W extends Way> extends AbstractPainter<JXMapViewer> {
 
 	}
 	
+	public Renderer getRenderer() {
+		return wayRenderer;
+	}
+	
 	public void setWayRenderer(Renderer wayRenderer) {
 		this.wayRenderer = wayRenderer;
 	}

@@ -352,18 +352,16 @@ public class TariffZonesModel {
 		}
 		
 		if (stop != null) {
-			if (getUnsavedStops().contains(stop) && stop.getState().equals(State.ADDED)) {
-				getUnsavedStops().remove(stop);
-				return true;
-			}
-			stop.setState(State.REMOVED);
-			getUnsavedStops().add(stop);
-			for (int i = 0; i < stop.getPartOfWays().size(); i++) {
-				removeAndRememberWay(stop.getPartOfWays().get(i));
-			}
-//			for (Way way : stop.getPartOfWays()) {
-//				removeAndRememberWay(way);
+//			if (getUnsavedStops().contains(stop) && stop.getState().equals(State.ADDED)) {
+//				getUnsavedStops().remove(stop);
+//				return true;
 //			}
+//			stop.setState(State.REMOVED);
+//			getUnsavedStops().add(stop);
+			int size = stop.getPartOfWays().size();
+			for (int i = 0; i < size; i++) {
+				removeAndRememberWay(stop.getPartOfWays().get(0));
+			}
 			getNetwork().removeStop(stop);
 			if (stop.getZone() != null) {
 				stop.getZone().getStopsInZone().remove(stop);
@@ -409,11 +407,11 @@ public class TariffZonesModel {
 		}
 		
 		if (way != null) {
-			if (getUnsavedWays().contains(way) && way.getState().equals(State.ADDED)) {
-				getUnsavedWays().remove(way);
-			}
-			way.setState(State.REMOVED);
-			getUnsavedWays().add(way);
+//			if (getUnsavedWays().contains(way) && way.getState().equals(State.ADDED)) {
+//				getUnsavedWays().remove(way);
+//			}
+//			way.setState(State.REMOVED);
+//			getUnsavedWays().add(way);
 			getNetwork().removeWay(way);
 			if (way.getStartPoint().getZone() != null) {
 				way.getStartPoint().getZone().getWaysInZone().remove(way); //TODO: look TODO in getWaysInZone()

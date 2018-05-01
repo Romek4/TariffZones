@@ -20,6 +20,7 @@ public class TariffZonesProblemSolver {
 	private ArrayList stops;
 	private ArrayList ways;
 	private Djikstra djikstra;
+	private double[][] distanceMatrix = null;
 	private SolverParameters params;
 	
 	private double dev1, dev2, dev3;
@@ -48,9 +49,19 @@ public class TariffZonesProblemSolver {
 		}
 	}
 	
+	public void test() {
+		for (int i = 3; i < 10; i++) {
+			params.f1 = (double)i/10;
+			for (int j = 1; j < 7; j++) {
+				params.f2 = (double)j/10;
+				
+				runGreedyAlgorithmWithPrices();
+			}
+		}
+		System.out.println("End");
+	}
+	
 	private ArrayList<Zone> runGreedyAlgorithm() {
-		
-		double[][] distanceMatrix = null;
 		if (djikstra != null) {
 			djikstra.runDjikstra();
 			distanceMatrix = djikstra.getDistanceMatrix();
@@ -79,18 +90,17 @@ public class TariffZonesProblemSolver {
 	}
 	
 	private ArrayList<Zone> runGreedyAlgorithmWithPrices() {
-		
-		double[][] distanceMatrix = null;
+//		double startTime = System.currentTimeMillis();
 		double[][] oldPricesMatrix = null;
 		
 		if (djikstra != null) {
 			djikstra.runDjikstra();
 			distanceMatrix = djikstra.getDistanceMatrix();
-			if (params.useDistanceMatrixForPrices) {
-				oldPricesMatrix = countOldPriceMatrix(params.oldPrices, distanceMatrix);
+			if (params.useCountOfStopsForPrices) {
+				oldPricesMatrix = countOldPriceMatrix(params.oldPrices, djikstra.getNodeCountMatrix());
 			}
 			else {
-				oldPricesMatrix = countOldPriceMatrix(params.oldPrices, djikstra.getNodeCountMatrix());
+				oldPricesMatrix = countOldPriceMatrix(params.oldPrices, distanceMatrix);
 			}
 		}
 		
@@ -108,8 +118,8 @@ public class TariffZonesProblemSolver {
 		
 		int[] maxPriceDifIndexes = new int[2];
 		Zone[] neighboringZones = new Zone[2];
+		
 		while (zones.size() != params.numberOfZones) {
-			
 			
 			//STEP 2
 			maxPriceDifIndexes = findMaximumPriceDifference(oldPricesMatrix, distanceMatrix, params);
@@ -124,10 +134,16 @@ public class TariffZonesProblemSolver {
 			}
 		}
 		
+//		double endTime = System.currentTimeMillis();
+		
 		countDevs(oldPricesMatrix, distanceMatrix, params);
+		
+//		System.out.println("Zones = " + zones.size() + ", f1=" + params.f1 + ", f2=" + params.f2 + ", time=" + (endTime - startTime)/1000);
+//		System.out.println("-----------------------------------------");
 		
 		return zones;
 	}
+	
 	
 	public void countDevs(double[][] oldPricesMatrix, double[][] distanceMatrix, SolverParameters params) {
 		dev1 = Double.MIN_VALUE;
@@ -182,8 +198,6 @@ public class TariffZonesProblemSolver {
 		else {
 			dev2 = -99999;
 		}
-		
-		System.out.println("dev1 = " + dev1 + ", dev2 = " + dev2 + ", dev3 = " + dev3);
 		
 	}
 	
@@ -259,7 +273,7 @@ public class TariffZonesProblemSolver {
 		}
 		else {
 			used[indexes[0]][indexes[1]] = 1;
-//			used[indexes[1]][indexes[0]] = 1;
+			used[indexes[1]][indexes[0]] = 1;
 		}
 		
 		return indexes;
@@ -333,23 +347,77 @@ public class TariffZonesProblemSolver {
 
 	private double countE(Zone zone, double[][] distanceMatrix, SolverParameters params) {
 		double sum = 0;
-		for (Stop stopInsideZone : zone.getStopsInZone()) {
-			if (!params.useDistance && params.useNumberOfHabs && params.ODMatrix == null) {
+		for (Stop stopInsideZone : zone.getStopsInZone()) {			
+			if (!params.useDistance && params.useNumberOfHabs && params.eFormula == 1) {
 				sum += stopInsideZone.getNumberOfCustomers();
 			}
 			else {
 				for (Stop stopOutsideZone : zone.getStopsConnectedWithZoneList()) {
-					if (params.useDistance && !params.useNumberOfHabs && params.ODMatrix == null) {
+					if (params.useDistance && !params.useNumberOfHabs && params.eFormula == 2) {
 						sum += getDistance(stopInsideZone, stopOutsideZone, distanceMatrix); //d(i, j) z matice Djikstra
 					}
-					else if (params.useDistance && params.useNumberOfHabs && params.ODMatrix == null) {
+					else if (params.useDistance && params.useNumberOfHabs && params.eFormula == 3) {
 						sum += getDistance(stopInsideZone, stopOutsideZone, distanceMatrix)*stopInsideZone.getNumberOfCustomers(); //d(i, j) z matice Djikstra
 					}
-					//TODO: ODMatrix != null
+					else if (params.eFormula == 4) {
+						sum += getZoneLeavingCustomers(zone, params, distanceMatrix);
+					}
 				}
 			}
 		}
 		return sum/((double)zone.getStopsInZone().size()*zone.getStopsConnectedWithZoneList().size());
+	}
+	
+	private int getZoneLeavingCustomers(Zone zone, SolverParameters params, double[][] distanceMatrix) {
+		if (zone == null || params == null || distanceMatrix == null || stops == null) {
+			return -1;
+		}
+		
+		int count = 0;
+		Stop stopI, stopJ;
+		for (int i = 0; i < stops.size(); i++) {
+			stopI = (Stop) stops.get(i);
+			if (zone.getStopsInZone().contains(stopI)) {
+				for (int j = 0; j < stops.size(); j++) {
+					stopJ = (Stop) stops.get(j);
+					if (!zone.getStopsInZone().contains(stopJ)) {
+						if (!params.countODMatrix && params.ODMatrix != null) {
+							count += params.ODMatrix[i][j];
+						}
+						else if(params.countODMatrix && distanceMatrix != null) {
+							count += (stopI.getNumberOfCustomers()*stopJ.getNumberOfCustomers())/Math.pow(distanceMatrix[i][j], 2);
+						}
+					}
+				}
+			}	
+		}
+		return count;
+	}
+	
+	public int getNumberOfCustomersTravelingBetween(Zone zoneFrom, Zone zoneTo) {
+		if (zoneFrom == null || zoneTo == null || params == null || distanceMatrix == null || stops == null) {
+			return -1;
+		}
+		
+		int count = 0;
+		Stop stopI, stopJ;
+		for (int i = 0; i < stops.size(); i++) {
+			stopI = (Stop) stops.get(i);
+			if (zoneFrom.getStopsInZone().contains(stopI)) {
+				for (int j = 0; j < stops.size(); j++) {
+					stopJ = (Stop) stops.get(j);
+					if (zoneTo.getStopsInZone().contains(stopJ)) {
+						if (!params.countODMatrix && params.ODMatrix != null) {
+							count += params.ODMatrix[i][j];
+						}
+						else if(params.countODMatrix && distanceMatrix != null) {
+							count += (stopI.getNumberOfCustomers()*stopJ.getNumberOfCustomers())/Math.pow(distanceMatrix[i][j], 2);
+						}
+					}
+				}
+			}	
+		}
+		return count;
 	}
 	
 	private double[][] countOldPriceMatrix(HashMap<Double, Double> pricesMap, int[][] nodeCountMatrix) {
@@ -439,5 +507,17 @@ public class TariffZonesProblemSolver {
 			}
 		}
 		return -1;
+	}
+	
+	public double getDev1() {
+		return dev1;
+	}
+	
+	public double getDev2() {
+		return dev2;
+	}
+	
+	public double getDev3() {
+		return dev3;
 	}
 }

@@ -21,6 +21,8 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.JToolTip;
+import javax.swing.SwingWorker;
+import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
@@ -28,6 +30,7 @@ import javax.swing.table.AbstractTableModel;
 import org.jxmapviewer.OSMTileFactoryInfo;
 import org.jxmapviewer.viewer.GeoPosition;
 import org.jxmapviewer.viewer.TileFactory;
+import org.jxmapviewer.viewer.Waypoint;
 
 import tariffzones.gui.AddStopDlg;
 import tariffzones.gui.AddWayDlg;
@@ -46,12 +49,16 @@ import tariffzones.gui.ColorZoneChooserPl;
 import tariffzones.gui.ConnectionDlg;
 import tariffzones.gui.TariffZonesView;
 import tariffzones.map.MapViewer;
+import tariffzones.map.painter.CustomersStreamsWayRenderer;
+import tariffzones.map.painter.VoronoiEdgePainter;
 import tariffzones.map.tilefactory.DefaultTileFactory;
 import tariffzones.map.tilefactory.TileFactoryManager;
 import tariffzones.map.tilefactory.tilefactoryinfo.LandscapeTileFactoryInfo;
 import tariffzones.map.tilefactory.tilefactoryinfo.MapnikGrayScaleTileFactoryInfo;
 import tariffzones.map.tilefactory.tilefactoryinfo.MapnikNoLabelsTileFactoryInfo;
 import tariffzones.map.tilefactory.tilefactoryinfo.TransportTileFactoryInfo;
+import tariffzones.processor.djikstra.Edge;
+import tariffzones.processor.voronoi.Voronoi;
 
 public class TariffZonesController {
 	private TariffZonesModel model;
@@ -67,6 +74,58 @@ public class TariffZonesController {
 	private final String IC_NETWORK_TYPE = "IC";
 	private final String OC_NETWORK_TYPE = "OC";
 	private final int WAY_MOUSE_RADIUS = 2;
+	
+	private ArrayList<Color> colorList = new ArrayList<>();
+	private ArrayList<Zone> zones;
+	private TariffZonesProblemSolver solver;
+	
+	private class MySwingWorker extends SwingWorker<ArrayList<Zone>, Integer> {
+
+		@Override
+		protected ArrayList<Zone> doInBackground() throws Exception {
+			try {
+				view.getInfoLabel().setText(view.WORKING_INFO_MSG);
+				view.disableAll();
+				if (solver != null) {
+					zones = solver.run();
+				}
+			} catch(Exception e) {
+				JOptionPane.showMessageDialog(view.getRootPane(), "An error occured during problem solving. Check if number of zones is not too small.", "Tariff Zones Problem Solving", JOptionPane.ERROR_MESSAGE);
+				view.enableAll();
+				this.cancel(true);
+			}
+			return null;
+		}
+		
+		@Override
+		protected void done() {
+			
+			if (zones == null) {
+				JOptionPane.showMessageDialog(view.getRootPane(), "An error occured during problem solving. Check if number of zones is not too small.", "Tariff Zones Problem Solving", JOptionPane.ERROR_MESSAGE);
+				view.enableAll();
+				this.cancel(true);
+				return;
+			}
+			
+			for (int i = 0; i < zones.size(); i++) {
+				painterManager.addZoneWaypointPainter(zones.get(i).getStopsInZone(), colorList.get(i));
+				zones.get(i).setColor(colorList.get(i));
+			}
+			
+			model.runVoronoi();
+			painterManager.getPolygonPainter().setPolygons(new HashSet<>(zones));
+			painterManager.repaintPainters();
+			
+			fillTableWithZones(view.getZoneTable(), zones);
+			view.getDev1Lb().setText(String.valueOf(solver.getDev1()));
+			view.getDev2Lb().setText(String.valueOf(solver.getDev2()));
+			view.getDev3Lb().setText(String.valueOf(solver.getDev3()));
+			view.getZoneIF().setVisible(true);
+			view.getInfoLabel().setText(view.DEFAULT_INFO_MSG);
+			view.enableAll();
+		}
+
+	}
 		
 	public TariffZonesController() {
 		model = new TariffZonesModel();
@@ -124,10 +183,11 @@ public class TariffZonesController {
         	JOptionPane.showMessageDialog(view.getRootPane(), "Invalid number of zones", "Tariff Zones Problem Solving", JOptionPane.ERROR_MESSAGE);
 		}
        
-        ArrayList<Color> colorList = dlg.getSelectedColors();
+        colorList = dlg.getSelectedColors();
         params.countODMatrix = dlg.getCountODMatrixChb().isSelected();
         params.useDistance = dlg.getESelected() > 1 ? true : false;
         params.useNumberOfHabs = dlg.getESelected() != 2 ? true : false;
+        params.eFormula = dlg.getESelected();
 		boolean useTimeLength = dlg.getUseTimeLengthRb().isSelected(); //if false, then dlg.getUseDistanceRb().isSelected() is true
 		if (params.useDistance) {
 			if (useTimeLength) {
@@ -139,7 +199,7 @@ public class TariffZonesController {
 			
 		}
 		
-		if (dlg.getUseODMatrixChb().isSelected() && !dlg.getCountODMatrixChb().isSelected()) {
+		if (dlg.getUseODMatrixChb().isSelected() && !params.countODMatrix) {
 			try {
 //				params.ODMatrix = model.getODMatrixFromFile(dlg.getODMatrixLb().getText(), model.getNetworkStops());
 				params.ODMatrix = model.getODMatrixFromFile("C://Users//Roman//Desktop//OD_matica_DPMZ_GOR_15_final 2.csv", model.getNetworkStops());
@@ -163,26 +223,92 @@ public class TariffZonesController {
 			}
 		}
 			
-		TariffZonesProblemSolver solver = new TariffZonesProblemSolver(model.getNetwork(), params);
-		ArrayList<Zone> zones = solver.run();
+		solver = new TariffZonesProblemSolver(model.getNetwork(), params);
+//		zones = solver.run();
 		
-		if (zones == null) {
-			JOptionPane.showMessageDialog(view.getRootPane(), "An error occured during problem solving. Check if number of zones is not too small.", "Tariff Zones Problem Solving", JOptionPane.ERROR_MESSAGE);
+		MySwingWorker mySwingWorker = new MySwingWorker();
+		mySwingWorker.execute();
+	}
+	
+	public void processStreams() {
+		double[][] customersStreams = countStreams(solver, zones);
+		double min = Double.MAX_VALUE;
+		double max = Double.MIN_VALUE;
+		if (customersStreams == null) {
 			return;
 		}
 		
-		for (int i = 0; i < zones.size(); i++) {
-			painterManager.addZoneWaypointPainter(zones.get(i).getStopsInZone(), colorList.get(i));
-			zones.get(i).setColor(colorList.get(i));
-//			zones.get(i).preparePolygonGeoPositions();
+		ArrayList<Way> streamWays = new ArrayList<>();
+		ArrayList<Stop> centralZonePoints = getCentralZonePoints(zones);
+		Stop stopFrom, stopTo;
+		for (int i = 0; i < customersStreams.length; i++) {
+			stopFrom = centralZonePoints.get(i);
+			for (int j = 0; j < customersStreams.length; j++) {
+				stopTo = centralZonePoints.get(j);
+				if (stopFrom.equals(stopTo)) {
+					continue;
+				}
+				
+				if (customersStreams[i][j] > max) {
+					max = customersStreams[i][j];
+				}
+				
+				if (customersStreams[i][j] < min) {
+					min = customersStreams[i][j];
+				}
+				
+				streamWays.add(new Way(stopFrom, stopTo, customersStreams[i][j], 0));
+			}
 		}
 		
-		model.runVoronoi();
-		painterManager.getPolygonPainter().setPolygons(new HashSet<>(zones));
+		painterManager.getCustomersStreamsPainter().setWays(new HashSet<>(streamWays));
+		((CustomersStreamsWayRenderer) painterManager.getCustomersStreamsPainter().getRenderer()).setMaxStrokeValue(max);
+		((CustomersStreamsWayRenderer) painterManager.getCustomersStreamsPainter().getRenderer()).setMinStrokeValue(min);
 		painterManager.repaintPainters();
+	}
+	
+	private double[][] countStreams(TariffZonesProblemSolver solver, ArrayList<Zone> zones) {
+		if (solver == null || zones == null) {
+			return null;
+		}
 		
-		fillTableWithZones(view.getZoneTable(), zones);
-		view.getZoneIF().setVisible(true);
+		double[][] customersStreams = new double[zones.size()][zones.size()];
+		
+		Zone zoneFrom, zoneTo;
+		for (int i = 0; i < zones.size(); i++) {
+			zoneFrom = zones.get(i);
+			for (int j = 0; j < zones.size(); j++) {
+				zoneTo = zones.get(j);
+				if (zoneFrom.equals(zoneTo)) {
+					customersStreams[i][j] = -1;
+					continue;
+				}
+				
+				customersStreams[i][j] = solver.getNumberOfCustomersTravelingBetween(zoneFrom, zoneTo);
+			}
+		}
+		
+		return customersStreams;
+	}
+	
+	private ArrayList<Stop> getCentralZonePoints(ArrayList<Zone> zones) {
+		ArrayList<Stop> centralZonePoints = new ArrayList<>(zones.size());
+		double avgLatitude = 0;
+		double avgLongitude = 0;
+		Stop centralPoint = null;
+		for (Zone zone : zones) {
+			avgLatitude = 0;
+			avgLongitude = 0;
+			centralPoint = null;
+			for (Stop stop : zone.getStopsInZone()) {
+				avgLatitude += stop.getLatitude();
+				avgLongitude += stop.getLongitude();
+			}
+			centralPoint = new Stop(-1, null, -1, avgLatitude/zone.getStopsInZone().size(), avgLongitude/zone.getStopsInZone().size());
+			centralPoint.setZone(zone);
+			centralZonePoints.add(centralPoint);
+		}
+		return centralZonePoints;
 	}
 
 	public void addStopsInNetworkToMap(String networkName) {
@@ -360,14 +486,19 @@ public class TariffZonesController {
 		try {
 			for (Stop stop : stops) {
 				model.removeAndRememberStop(stop);
+				
+				if (stop.getZone() != null) {
+					painterManager.removeStopFromZoneWaypointPainter(stop);
+				}
 			}
 			
 	    } catch(Exception e) {
-	    	JOptionPane.showMessageDialog(view.getMapViewer(), e.getMessage(), "Edit Stop", JOptionPane.ERROR_MESSAGE);
+	    	JOptionPane.showMessageDialog(view.getMapViewer(), e.getMessage(), "Delete Stop", JOptionPane.ERROR_MESSAGE);
 	    	return;
 	    }
 		
 		painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
+		painterManager.getWayPainter().setWays(new HashSet<>(model.getNetworkWays()));
 		painterManager.repaintPainters();
 		updateBtns();
 		updateTables();
@@ -464,8 +595,6 @@ public class TariffZonesController {
 		
 		dlg.getWayLengthTf().setText(String.valueOf(way.getDistance()));
 		dlg.getWayTimeLengthTf().setText(String.valueOf(way.getTimeLength()));
-		dlg.getComutersTf().setText(String.valueOf(way.getComuters()));
-		dlg.getOppositeDirectionComutersTf().setText(String.valueOf(way.getOppositeDirectionComuters()));
 		
 		int option = JOptionPane.showConfirmDialog(view.getRootPane(), dlg, "Edit Way", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
         if (option == 2 || option == -1) {
@@ -475,14 +604,10 @@ public class TariffZonesController {
         try {
         	double distance = Double.parseDouble(dlg.getWayLengthTf().getText());
         	double timeLength = Double.parseDouble(dlg.getWayTimeLengthTf().getText());
-        	int comuters = Integer.parseInt(dlg.getComutersTf().getText());
-        	int oppositeDirectionComuters = Integer.parseInt(dlg.getOppositeDirectionComutersTf().getText());
             
-            if (wasModified(way, distance, timeLength, comuters, oppositeDirectionComuters)) {
+            if (wasModified(way, distance, timeLength)) {
             	way.setDistance(distance);
             	way.setTimeLength(timeLength);
-            	way.setComuters(comuters);
-            	way.setOppositeDirectionComuters(oppositeDirectionComuters);
     		}
             
         } catch(Exception e) {
@@ -507,10 +632,10 @@ public class TariffZonesController {
 			}
 			
 	    } catch(Exception e) {
-	    	JOptionPane.showMessageDialog(view.getMapViewer(), e.getMessage(), "Add Stop", JOptionPane.ERROR_MESSAGE);
+	    	JOptionPane.showMessageDialog(view.getMapViewer(), e.getMessage(), "Delete Way", JOptionPane.ERROR_MESSAGE);
 	    	return;
 	    }
-		
+		painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
 		painterManager.getWayPainter().setWays(new HashSet<>(model.getNetworkWays()));
 		painterManager.repaintPainters();
 		updateBtns();
@@ -522,9 +647,10 @@ public class TariffZonesController {
 			model.removeAndRememberWay(way);
 			
         } catch(Exception e) {
-        	JOptionPane.showMessageDialog(view.getMapViewer(), e.getMessage(), "Add Stop", JOptionPane.ERROR_MESSAGE);
+        	JOptionPane.showMessageDialog(view.getMapViewer(), e.getMessage(), "Delete Way", JOptionPane.ERROR_MESSAGE);
         	return;
         }
+		painterManager.getWaypointPainter().setWaypoints(new HashSet<>(model.getNetworkStops()));
 		painterManager.getWayPainter().setWays(new HashSet<>(model.getNetworkWays()));
 		painterManager.repaintPainters();
 		updateBtns();
@@ -546,11 +672,8 @@ public class TariffZonesController {
 		return true;
 	}
 
-	private boolean wasModified(Way way, double distance, double timeLength, int comuters, int oppositeDirectionComuters) {
-		if (way.getDistance() == distance
-				&& way.getTimeLength() == timeLength
-				&& way.getComuters() == comuters
-				&& way.getOppositeDirectionComuters() == oppositeDirectionComuters) {
+	private boolean wasModified(Way way, double distance, double timeLength) {
+		if (way.getDistance() == distance && way.getTimeLength() == timeLength) {
 			return false;
 		}
 		return true;
@@ -575,8 +698,8 @@ public class TariffZonesController {
 //		String stopsFilePath = dlg.getStopsFileLb().getText();
 //		String wayFilePath = dlg.getWayFileLb().getText();
 		
-		String stopsFilePath = "D://Diplomová práca//TariffZones//DP data//exportedStopsZV25.csv";
-		String wayFilePath = "D://Diplomová práca//TariffZones//DP data//exportedWaysZV25.csv";
+		String stopsFilePath = "D://Diplomová práca//TariffZones//DP data//exportedStopsZV51.csv";
+		String wayFilePath = "D://Diplomová práca//TariffZones//DP data//exportedWaysZV51.csv";
 		
 		ArrayList<Stop> stops = null;
 		ArrayList<Way> ways = null;
@@ -630,7 +753,7 @@ public class TariffZonesController {
 	}
 	
 	public void cleanMap() {
-		view.getZoneIF().setVisible(false);
+//		view.getZoneIF().setVisible(false);
 		painterManager.getPolygonPainter().setPolygons(null);
 		painterManager.repaintPainters();
 	}
@@ -792,6 +915,10 @@ public class TariffZonesController {
 							if (stopTableModel instanceof StopTableModel) {
 								list = (ArrayList) ((StopTableModel)stopTableModel).getData();
 								
+								if (list.isEmpty()) {
+									return;
+								}
+								
 								Stop stop = (Stop) list.get(e.getFirstRow());
 								if (stop != null && !model.getUnsavedStops().contains(stop)) {
 									stop.setState(State.MODIFIED); //TODO: last stop in table also added when adding a new stop
@@ -800,6 +927,10 @@ public class TariffZonesController {
 							}
 							else if (stopTableModel instanceof WayTableModel) {
 								list = (ArrayList) ((WayTableModel)stopTableModel).getData();
+								
+								if (list.isEmpty()) {
+									return;
+								}
 								
 								Way way = (Way) list.get(e.getFirstRow());
 								if (way != null && !model.getUnsavedWays().contains(way)) {
@@ -1151,13 +1282,32 @@ public class TariffZonesController {
 	
 	private void updateTables() {
 		if (((AbstractTableModel) view.getStopTable().getModel()) != null) {
+			if (view.getStopTable().getModel().getRowCount() == 0) {
+				view.getStopTable().setRowSorter(null);
+			}
 			((AbstractTableModel) view.getStopTable().getModel()).fireTableDataChanged();
 		}
 		
 		if (((AbstractTableModel) view.getWayTable().getModel()) != null) {
+			if (view.getWayTable().getModel().getRowCount() == 0) {
+				view.getWayTable().setRowSorter(null);
+			}
+			
+			if (view.getZoneTable().getSelectedRow() != -1) {
+				Zone zone = (Zone) ((ZoneTableModel)view.getZoneTable().getModel()).getValueAt(view.getZoneTable().getSelectedRow(), 0);
+				highligthStops(zone.getStopsInZone(), Color.RED);
+				if (view.getStopCb().getSelectedItem().toString().equals(view.STOPS)) {
+					fillTableWithStops(view.getStopTable(), zone.getStopsInZone());
+					fillTableWithWays(view.getWayTable(), zone.getWaysInZone());
+				}
+				else {
+					fillTableWithStops(view.getWayTable(), zone.getStopsInZone());
+					fillTableWithWays(view.getStopTable(), zone.getWaysInZone());
+				}
+				((AbstractTableModel) view.getStopTable().getModel()).fireTableDataChanged();
+			}
 			((AbstractTableModel) view.getWayTable().getModel()).fireTableDataChanged();
 		}
-		
 	}
 	
 	public void clearUnsaved() {

@@ -62,24 +62,6 @@ public class AddWayDlg extends JPanel {
 		gbc.gridx = 1;
 		gbc.gridy = 2;
 		this.add(getWayTimeLengthTf(), gbc);
-		
-//		JLabel comutersLb = new JLabel("Comuters:");
-//		gbc.gridx = 0;
-//		gbc.gridy = 3;
-//		this.add(comutersLb, gbc);
-//		
-//		gbc.gridx = 1;
-//		gbc.gridy = 3;
-//		this.add(getComutersTf(), gbc);
-//		
-//		JLabel oppositeDirectionComutersLb = new JLabel("Opposite direction comuters:");
-//		gbc.gridx = 0;
-//		gbc.gridy = 4;
-//		this.add(oppositeDirectionComutersLb, gbc);
-//		
-//		gbc.gridx = 1;
-//		gbc.gridy = 4;
-//		this.add(getOppositeDirectionComutersTf(), gbc);
 	}
 	
 	private JLabel getIconLabel() {
@@ -97,24 +79,6 @@ public class AddWayDlg extends JPanel {
 			wayLengthTf.setMinimumSize(new Dimension(100, 20));
 		}
 		return wayLengthTf;
-	}
-	
-	public JTextField getComutersTf() {
-		if (comutersTf == null) {
-			comutersTf = new JTextField();
-			comutersTf.setPreferredSize(new Dimension(100, 20));
-			comutersTf.setMinimumSize(new Dimension(100, 20));
-		}
-		return comutersTf;
-	}
-	
-	public JTextField getOppositeDirectionComutersTf() {
-		if (oppositeDirectionComutersTf == null) {
-			oppositeDirectionComutersTf = new JTextField();
-			oppositeDirectionComutersTf.setPreferredSize(new Dimension(100, 20));
-			oppositeDirectionComutersTf.setMinimumSize(new Dimension(100, 20));
-		}
-		return oppositeDirectionComutersTf;
 	}
 	
 	public JTextField getWayTimeLengthTf() {

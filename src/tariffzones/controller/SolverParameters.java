@@ -4,12 +4,13 @@ import java.util.HashMap;
 
 public class SolverParameters {
 	int numberOfZones;
-	boolean useDistance = true;
-	boolean useNumberOfHabs = true;
+	boolean useDistance;
+	boolean useNumberOfHabs;
 	int[][] ODMatrix;
 	HashMap<Double, Double> oldPrices;
-	boolean useDistanceMatrixForPrices = true;
+	boolean useCountOfStopsForPrices;
 	boolean countODMatrix;
 	double f1;
 	double f2;
+	int eFormula;
 }

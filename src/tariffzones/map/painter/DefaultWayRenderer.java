@@ -10,8 +10,8 @@ import org.jxmapviewer.JXMapViewer;
 
 public class DefaultWayRenderer implements Renderer<tariffzones.basicobjects.Way> {
 
-	private Color color = Color.BLACK;; 
-	private int lineStroke = 1;
+	protected Color color = Color.BLACK;; 
+	protected int lineStroke = 1;
 
 	public DefaultWayRenderer() {
 	}

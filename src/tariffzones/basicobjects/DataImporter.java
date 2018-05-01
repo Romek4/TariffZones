@@ -141,44 +141,6 @@ public class DataImporter {
 	    }
 	}
 	
-	public void readODMatrix(String fileName, ArrayList<Stop> stops, ArrayList<Way> ways) throws IOException, FileNotFoundException {
-		
-		FileReader fileReader = new FileReader(fileName);
-		CSVReader csvReader = new CSVReader(fileReader, ';');
-		String[] nextLine;
-		String[] firstLine;
-		try {
-			firstLine = csvReader.readNext();
-			int startStopNumber, endStopNumber, comuters;
-			while ((nextLine = csvReader.readNext()) != null) {
-				
-				startStopNumber = Integer.parseInt(nextLine[0]);
-				for (int j = 0; j < firstLine.length; j++) {
-					
-					endStopNumber = Integer.parseInt(firstLine[j]);
-					Way way = findWay(ways, startStopNumber, endStopNumber);
-					if (way != null) {
-						comuters = Integer.parseInt(nextLine[j+1]);
-						if (comuters > 0) {
-							if (way.getStartPoint().getNumber() == startStopNumber) {
-								way.setComuters(comuters);
-							}
-							else {
-								way.setOppositeDirectionComuters(comuters);
-							}
-						}
-					}
-				}
-			}
-			csvReader.close();
-		} catch (IOException e) {
-			Logger.getLogger(DataImporter.class.getName()).log(Level.SEVERE, null, e);
-			System.out.println(e.getStackTrace());
-			csvReader.close();
-		}
-		
-	}
-	
 	public int[][] readODMatrix(String fileName, ArrayList<Stop> stops) throws IOException, FileNotFoundException {
 		int[][] odMatrix = new int[stops.size()][stops.size()];
 		fillMatrixNegative(odMatrix);
@@ -202,13 +164,6 @@ public class DataImporter {
 					}
 				}
 			}
-			
-//			for (int i = 0; i < odMatrix.length; i++) {
-//				for (int j = 0; j < odMatrix.length; j++) {
-//					System.out.print(odMatrix[i][j] + ", ");
-//				}
-//				System.out.println();
-//			}
 			
 			csvReader.close();
 		} catch (IOException e) {

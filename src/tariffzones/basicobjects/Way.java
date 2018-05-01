@@ -15,10 +15,6 @@ public class Way implements Edge, tariffzones.map.painter.Way, ObjectState {
 	public static String PRICE_VALUE = "km";
 	public static final String DISTANCE = "km";
 	public static final String TIME = "time";
-	
-	private int comuters;
-	private int oppositeDirectionComuters;
-	
 	private State state = State.DEFAULT;
 	
 	public Way(Stop startPoint, Stop endPoint, double distance, double timeLength) {
@@ -30,18 +26,6 @@ public class Way implements Edge, tariffzones.map.painter.Way, ObjectState {
 		this.startPoint.addWay(this);
 		this.endPoint.addWay(this);
 	}
-	
-//	public Way(Stop startPoint, Stop endPoint, double distance, double timeLength, int comuters, int oppositeDirectionComuters) {
-//		this.startPoint = startPoint;
-//		this.endPoint = endPoint;
-//		this.distance = distance;
-//		this.timeLength = timeLength;
-//		this.comuters = comuters;
-//		this.oppositeDirectionComuters = oppositeDirectionComuters;
-//		
-//		this.startPoint.addWay(this);
-//		this.endPoint.addWay(this);
-//	}
 	
 	public int getId() {
 		return this.id;
@@ -70,22 +54,6 @@ public class Way implements Edge, tariffzones.map.painter.Way, ObjectState {
 	public void setTimeLength(double timeLength) {
 		this.timeLength = timeLength;
 	}
-	
-	public int getComuters() {
-		return this.comuters;
-	}
-	
-	public void setComuters(int comuters) {
-		this.comuters = comuters;
-	}
-	
-	public int getOppositeDirectionComuters() {
-		return this.oppositeDirectionComuters;
-	}
-	
-	public void setOppositeDirectionComuters(int oppositeDirectionComuters) {
-		this.oppositeDirectionComuters = oppositeDirectionComuters;
-	}
 
 	@Override
 	public Node getStartNode() {
@@ -98,7 +66,7 @@ public class Way implements Edge, tariffzones.map.painter.Way, ObjectState {
 	}
 
 	@Override
-	public double getPrice() { //TODO: Ëo keÔ bude chcieù r·taù maticu vzdialenostÌ podæa km a nie podæa Ëasov - viac konötruktorov a nejak˝ prepÌnaË, ktor˝ by urËoval Ëo vr·ti t·to metÛda ako price, ale Ëo keÔ budem maù k hrane aj km, aj Ëas, aj poËet cestuj˙cich... ?
+	public double getPrice() {
 		if (Way.PRICE_VALUE.equals(Way.DISTANCE)) {
 			return this.distance;
 		}

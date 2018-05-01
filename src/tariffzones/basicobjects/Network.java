@@ -38,6 +38,8 @@ public class Network {
 	public boolean removeWay(Way way) {
 		way.getStartPoint().getPartOfWays().remove(way);
 		way.getEndPoint().getPartOfWays().remove(way);
+		way.getStartPoint().getConnectedWithStopList().remove(way.getEndPoint());
+		way.getEndPoint().getConnectedWithStopList().remove(way.getStartPoint());
 		return getWays().remove(way);
 	}
 

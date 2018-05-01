@@ -15,6 +15,7 @@ import org.jxmapviewer.viewer.WaypointPainter;
 import tariffzones.basicobjects.Network;
 import tariffzones.basicobjects.Stop;
 import tariffzones.basicobjects.Zone;
+import tariffzones.map.painter.CustomersStreamsWayRenderer;
 import tariffzones.map.painter.DefaultPolygonRenderer;
 import tariffzones.map.painter.DefaultWayRenderer;
 import tariffzones.map.painter.PolygonPainter;
@@ -33,6 +34,7 @@ public class PainterManager {
 	private PolygonPainter<Zone> polygonPainter;
 	private CompoundPainter<Painter<JXMapViewer>> compoundPainter;
 	private List<Painter<JXMapViewer>> painters;
+	private WayPainter<Way> customersStreamsPainter;
 	
 	StopWaypointRenderer stopWaypointRenderer;
 	StopWaypointRenderer selectedWaypointRenderer;
@@ -60,12 +62,16 @@ public class PainterManager {
 		polygonPainter = new PolygonPainter<>();
 		polygonPainter.setPolygonRenderer(new DefaultPolygonRenderer());
 		
+		customersStreamsPainter = new WayPainter<>();
+		customersStreamsPainter.setWayRenderer(new CustomersStreamsWayRenderer(Color.CYAN));
+		
 		painters = new ArrayList<Painter<JXMapViewer>>();
 		painters.add(polygonPainter);
 		painters.add(selectedWaypointPainter);
 		painters.add(waypointPainter);
 		painters.add(wayPainter);
 		painters.add(selectedWayPainter);
+		painters.add(customersStreamsPainter);
 		
 		compoundPainter = new CompoundPainter<>((List<? extends Painter<Painter<JXMapViewer>>>) painters);
 	}
@@ -115,6 +121,10 @@ public class PainterManager {
 	
 	public WayPainter getWayPainter() {
 		return wayPainter;
+	}
+	
+	public WayPainter getCustomersStreamsPainter() {
+		return customersStreamsPainter;
 	}
 	
 	public PolygonPainter getPolygonPainter() {
