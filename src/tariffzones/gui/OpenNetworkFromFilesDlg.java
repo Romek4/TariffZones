@@ -110,6 +110,9 @@ public class OpenNetworkFromFilesDlg extends JPanel {
 				Image img = ImageIO.read(new FileInputStream("resources/images/browseFoldersIcon.png"));
 				waysBtn.setIcon(new ImageIcon(img.getScaledInstance(waysBtn.getWidth(), waysBtn.getHeight(), Image.SCALE_SMOOTH)));
 				waysBtn.setToolTipText("Solve tariff zones problem for current network");
+				
+				waysBtn.addActionListener(getActionListener());
+				
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -126,6 +129,9 @@ public class OpenNetworkFromFilesDlg extends JPanel {
 				Image img = ImageIO.read(new FileInputStream("resources/images/browseFoldersIcon.png"));
 				stopsBtn.setIcon(new ImageIcon(img.getScaledInstance(stopsBtn.getWidth(), stopsBtn.getHeight(), Image.SCALE_SMOOTH)));
 				stopsBtn.setToolTipText("Solve tariff zones problem for current network");
+				
+				stopsBtn.addActionListener(getActionListener());
+				
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

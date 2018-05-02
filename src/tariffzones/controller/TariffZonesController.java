@@ -47,6 +47,7 @@ import tariffzones.basicobjects.ZoneTableModel;
 import tariffzones.gui.AddNetworkDlg;
 import tariffzones.gui.ColorZoneChooserPl;
 import tariffzones.gui.ConnectionDlg;
+import tariffzones.gui.OpenNetworkFromFilesDlg;
 import tariffzones.gui.TariffZonesView;
 import tariffzones.map.MapViewer;
 import tariffzones.map.painter.CustomersStreamsWayRenderer;
@@ -173,7 +174,8 @@ public class TariffZonesController {
          	return;
          }
          else if(numberOfZones == 0) {
-         	return;
+        	JOptionPane.showMessageDialog(view.getMapViewer(), "Number of zones not specified!", "Solve tariff zone problem", JOptionPane.ERROR_MESSAGE);
+        	return;
          }
          params.numberOfZones = numberOfZones;
              
@@ -201,8 +203,8 @@ public class TariffZonesController {
 		
 		if (dlg.getUseODMatrixChb().isSelected() && !params.countODMatrix) {
 			try {
-//				params.ODMatrix = model.getODMatrixFromFile(dlg.getODMatrixLb().getText(), model.getNetworkStops());
-				params.ODMatrix = model.getODMatrixFromFile("C://Users//Roman//Desktop//OD_matica_DPMZ_GOR_15_final 2.csv", model.getNetworkStops());
+				params.ODMatrix = model.getODMatrixFromFile(dlg.getODMatrixLb().getText(), model.getNetworkStops());
+//				params.ODMatrix = model.getODMatrixFromFile("C://Users//Roman//Desktop//OD_matica_DPMZ_GOR_15_final 2.csv", model.getNetworkStops());
 			} catch (IOException e) {
 				JOptionPane.showMessageDialog(view.getRootPane(), e.getMessage(), "Tariff Zones Problem Solving", JOptionPane.ERROR_MESSAGE);
 				e.printStackTrace();
@@ -212,8 +214,8 @@ public class TariffZonesController {
 		
 		if (dlg.getAlgWithPricesRb().isSelected()) {
 			try {
-//				params.oldPrices = model.getPricesFromFile(dlg.getPricesLb().getText(), model.getNetworkStops());
-				params.oldPrices = model.getPricesFromFile("D://Diplomová práca//TariffZones//DP data//pricesZV.csv");
+				params.oldPrices = model.getPricesFromFile(dlg.getPricesLb().getText());
+//				params.oldPrices = model.getPricesFromFile("D://Diplomová práca//TariffZones//DP data//pricesZV.csv");
 				params.f1 = Double.parseDouble(dlg.getF1Tf().getText());
 				params.f2 = Double.parseDouble(dlg.getF2Tf().getText());
 			} catch (IOException e) {
@@ -680,26 +682,26 @@ public class TariffZonesController {
 	}
 	
 	public void openNetworkFromFiles() throws IOException, FileNotFoundException {
-//		OpenNetworkFromFilesDlg dlg = new OpenNetworkFromFilesDlg();
-//		Image img;
-//		try {
-//			img = ImageIO.read(new FileInputStream("resources/images/networkIcon.png"));
-//			dlg.setIconLabelImg(img);
-//			dlg.setIconLabelText("Open network from files");
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-//		
-//		int option = JOptionPane.showConfirmDialog(view.getRootPane(), dlg, "Open Network", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-//        if (option == 2  || option == -1) {
-//            return;
-//        }
-//        
-//		String stopsFilePath = dlg.getStopsFileLb().getText();
-//		String wayFilePath = dlg.getWayFileLb().getText();
+		OpenNetworkFromFilesDlg dlg = new OpenNetworkFromFilesDlg();
+		Image img;
+		try {
+			img = ImageIO.read(new FileInputStream("resources/images/networkIcon.png"));
+			dlg.setIconLabelImg(img);
+			dlg.setIconLabelText("Open network from files");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 		
-		String stopsFilePath = "D://Diplomová práca//TariffZones//DP data//exportedStopsZV51.csv";
-		String wayFilePath = "D://Diplomová práca//TariffZones//DP data//exportedWaysZV51.csv";
+		int option = JOptionPane.showConfirmDialog(view.getRootPane(), dlg, "Open Network", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (option == 2  || option == -1) {
+            return;
+        }
+        
+		String stopsFilePath = dlg.getStopsFileLb().getText();
+		String wayFilePath = dlg.getWayFileLb().getText();
+		
+//		String stopsFilePath = "D://Diplomová práca//TariffZones//DP data//exportedStopsZV51.csv";
+//		String wayFilePath = "D://Diplomová práca//TariffZones//DP data//exportedWaysZV51.csv";
 		
 		ArrayList<Stop> stops = null;
 		ArrayList<Way> ways = null;
@@ -743,9 +745,7 @@ public class TariffZonesController {
 		painterManager.getWayPainter().setWays(new HashSet<>(model.getNetworkWays()));
 		painterManager.repaintPainters();
 		updateBtns();
-		updateTables();
-		
-		
+//		updateTables();
 	}
 	
 	public void deleteNetwork(String networkName) {
@@ -1306,6 +1306,7 @@ public class TariffZonesController {
 				}
 				((AbstractTableModel) view.getStopTable().getModel()).fireTableDataChanged();
 			}
+			
 			((AbstractTableModel) view.getWayTable().getModel()).fireTableDataChanged();
 		}
 	}

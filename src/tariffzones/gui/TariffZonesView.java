@@ -637,7 +637,7 @@ public class TariffZonesView extends JFrame {
 								getController().fillTableWithStops(getStopTable());
 								getController().resetSelected();
 								if (getWayCb().getSelectedItem().toString().equals(STOPS)) {
-									getStopTable().setModel(getWayTable().getModel());
+//									getStopTable().setModel(getWayTable().getModel());
 									getWayCb().setSelectedItem(WAYS);
 								}
 							}
@@ -1433,6 +1433,8 @@ public class TariffZonesView extends JFrame {
 	
 	public void disableAll() {
 		getTileServersCb().setEnabled(false);
+		getStopCb().setEnabled(false);
+		getWayCb().setEnabled(false);
 		getExportStopsToCSVMenuItem().setEnabled(false);
 		getExportWaysToCSVMenuItem().setEnabled(false);
 		getMapToolboxPl().getSolveBtn().setEnabled(false);
@@ -1452,6 +1454,8 @@ public class TariffZonesView extends JFrame {
 	
 	public void enableAll() {
 		getTileServersCb().setEnabled(true);
+		getStopCb().setEnabled(true);
+		getWayCb().setEnabled(true);
 		getExportStopsToCSVMenuItem().setEnabled(true);
 		getExportWaysToCSVMenuItem().setEnabled(true);
 		getMapToolboxPl().getSolveBtn().setEnabled(true);
