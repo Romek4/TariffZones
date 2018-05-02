@@ -5,13 +5,11 @@ import java.awt.Image;
 import java.awt.Point;
 import java.awt.geom.Point2D;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
@@ -22,7 +20,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.JToolTip;
 import javax.swing.SwingWorker;
-import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
@@ -30,7 +27,6 @@ import javax.swing.table.AbstractTableModel;
 import org.jxmapviewer.OSMTileFactoryInfo;
 import org.jxmapviewer.viewer.GeoPosition;
 import org.jxmapviewer.viewer.TileFactory;
-import org.jxmapviewer.viewer.Waypoint;
 
 import tariffzones.gui.AddStopDlg;
 import tariffzones.gui.AddWayDlg;
@@ -51,15 +47,12 @@ import tariffzones.gui.OpenNetworkFromFilesDlg;
 import tariffzones.gui.TariffZonesView;
 import tariffzones.map.MapViewer;
 import tariffzones.map.painter.CustomersStreamsWayRenderer;
-import tariffzones.map.painter.VoronoiEdgePainter;
 import tariffzones.map.tilefactory.DefaultTileFactory;
 import tariffzones.map.tilefactory.TileFactoryManager;
 import tariffzones.map.tilefactory.tilefactoryinfo.LandscapeTileFactoryInfo;
 import tariffzones.map.tilefactory.tilefactoryinfo.MapnikGrayScaleTileFactoryInfo;
 import tariffzones.map.tilefactory.tilefactoryinfo.MapnikNoLabelsTileFactoryInfo;
 import tariffzones.map.tilefactory.tilefactoryinfo.TransportTileFactoryInfo;
-import tariffzones.processor.djikstra.Edge;
-import tariffzones.processor.voronoi.Voronoi;
 
 public class TariffZonesController {
 	private TariffZonesModel model;
@@ -396,7 +389,7 @@ public class TariffZonesController {
 		AddStopDlg dlg = new AddStopDlg();
 		Image img;
 		try {
-			img = ImageIO.read(new FileInputStream("resources/images/busStopBtnImg.png"));
+			img = ImageIO.read(ClassLoader.class.getResourceAsStream("/busStopBtnImg.png"));
 			dlg.setIconLabelImg(img);
 			dlg.setIconLabelText("Add Stop");
 		} catch (IOException e) {
@@ -436,7 +429,7 @@ public class TariffZonesController {
 		AddStopDlg dlg = new AddStopDlg();
 		Image img;
 		try {
-			img = ImageIO.read(new FileInputStream("resources/images/editIcon.png"));
+			img = ImageIO.read(ClassLoader.class.getResourceAsStream("/editIcon.png"));
 			dlg.setIconLabelImg(img);
 			dlg.setIconLabelText("Edit Stop");
 		} catch (IOException e) {
@@ -537,7 +530,7 @@ public class TariffZonesController {
 		
 		Image img = null;
 		try {
-			img = ImageIO.read(new FileInputStream("resources/images/wayBtnImg.png"));
+			img = ImageIO.read(ClassLoader.class.getResourceAsStream("/wayBtnImg.png"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -588,7 +581,7 @@ public class TariffZonesController {
 		AddWayDlg dlg = new AddWayDlg();
 		Image img;
 		try {
-			img = ImageIO.read(new FileInputStream("resources/images/editIcon.png"));
+			img = ImageIO.read(ClassLoader.class.getResourceAsStream("/editIcon.png"));
 			dlg.setIconLabelImg(img);
 			dlg.setIconLabelText("Edit Way");
 		} catch (IOException e) {
@@ -685,7 +678,7 @@ public class TariffZonesController {
 		OpenNetworkFromFilesDlg dlg = new OpenNetworkFromFilesDlg();
 		Image img;
 		try {
-			img = ImageIO.read(new FileInputStream("resources/images/networkIcon.png"));
+			img = ImageIO.read(ClassLoader.class.getResourceAsStream("/networkIcon.png"));
 			dlg.setIconLabelImg(img);
 			dlg.setIconLabelText("Open network from files");
 		} catch (IOException e) {
@@ -793,7 +786,6 @@ public class TariffZonesController {
         String password = dlg.getPasswordTf().getText(); //FIXME
         
 //		connectedToDB = model.connectToDB(dbUrl, username, password);
-		connectedToDB = model.connectToDB("jdbc:mysql://localhost/traffic_networks_db?characterEncoding=UTF-8", "admin", "admin");
 		//TODO: remember credentials, save to file
 		if (connectedToDB && dlg.getRememberChb().isSelected()) {
 			

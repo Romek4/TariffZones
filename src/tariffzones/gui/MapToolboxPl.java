@@ -64,7 +64,7 @@ public class MapToolboxPl extends JPanel {
 			openNetworkFromFilesBtn.setSize(new Dimension(32, 32));
 			openNetworkFromFilesBtn.setContentAreaFilled(false);
 			try {
-				Image img = ImageIO.read(new FileInputStream("resources/images/openIcon.png"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/openIcon.png"));
 				openNetworkFromFilesBtn.setIcon(new ImageIcon(img.getScaledInstance(openNetworkFromFilesBtn.getWidth(), openNetworkFromFilesBtn.getHeight(), Image.SCALE_SMOOTH)));
 				openNetworkFromFilesBtn.setToolTipText("Read network from files");
 			} catch (IOException e) {
@@ -80,7 +80,7 @@ public class MapToolboxPl extends JPanel {
 				solveBtn = new JButton();
 				solveBtn.setSize(new Dimension(32, 32));
 				solveBtn.setContentAreaFilled(false);
-				Image img = ImageIO.read(new FileInputStream("resources/images/solve.png"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/solve.png"));
 				solveBtn.setIcon(new ImageIcon(img.getScaledInstance(solveBtn.getWidth(), solveBtn.getHeight(), Image.SCALE_SMOOTH)));
 				solveBtn.setToolTipText("Solve tariff zones problem for current network");
 			} catch (IOException e) {
@@ -96,7 +96,7 @@ public class MapToolboxPl extends JPanel {
 				pointBtn = new JButton();
 				pointBtn.setSize(new Dimension(32, 32));
 				pointBtn.setContentAreaFilled(false);
-				Image img = ImageIO.read(new FileInputStream("resources/images/busStopBtnImg.png"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/busStopBtnImg.png"));
 				pointBtn.setIcon(new ImageIcon(img.getScaledInstance(pointBtn.getWidth(), pointBtn.getHeight(), Image.SCALE_SMOOTH)));
 				pointBtn.setToolTipText("Add new stop to current network");
 			} catch (IOException e) {
@@ -112,7 +112,7 @@ public class MapToolboxPl extends JPanel {
 				wayBtn = new JButton();
 				wayBtn.setSize(new Dimension(32, 32));
 				wayBtn.setContentAreaFilled(false);
-				Image img = ImageIO.read(new FileInputStream("resources/images/wayBtnImg.png"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/wayBtnImg.png"));
 				wayBtn.setIcon(new ImageIcon(img.getScaledInstance(wayBtn.getWidth(), wayBtn.getHeight(), Image.SCALE_SMOOTH)));
 				wayBtn.setToolTipText("Add new way to current network");
 			} catch (IOException e) {
@@ -128,7 +128,7 @@ public class MapToolboxPl extends JPanel {
 				saveBtn = new JButton();
 				saveBtn.setSize(new Dimension(32, 32));
 				saveBtn.setContentAreaFilled(false);
-				Image img = ImageIO.read(new FileInputStream("resources/images/saveToDBImg.png"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/saveToDBImg.png"));
 				saveBtn.setIcon(new ImageIcon(img.getScaledInstance(saveBtn.getWidth(), saveBtn.getHeight(), Image.SCALE_SMOOTH)));
 				saveBtn.setToolTipText("Save changes to database");
 			} catch (IOException e) {

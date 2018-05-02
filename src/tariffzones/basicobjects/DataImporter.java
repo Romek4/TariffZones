@@ -23,7 +23,6 @@ public class DataImporter {
 
 	public DataImporter() {
 		SQLProcessor mySQLAccess = new SQLProcessor();
-//		mySQLAccess.connectDatabase("admin", "admin"); //TODO
 	}
 	
 	public ArrayList<Node> readStops(String fileName) throws IOException, FileNotFoundException {

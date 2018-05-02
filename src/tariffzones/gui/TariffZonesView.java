@@ -21,17 +21,14 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
 import javax.imageio.ImageIO;
-import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
@@ -47,8 +44,6 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.RowFilter;
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableModel;
@@ -988,7 +983,7 @@ public class TariffZonesView extends JFrame {
 			openNetworkFromFilesBtn.setSize(new Dimension(32, 32));
 			openNetworkFromFilesBtn.setContentAreaFilled(false);
 			try {
-				Image img = ImageIO.read(new FileInputStream("resources/images/openIcon.png"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/openIcon.png"));
 				openNetworkFromFilesBtn.setIcon(new ImageIcon(img.getScaledInstance(openNetworkFromFilesBtn.getWidth(), openNetworkFromFilesBtn.getHeight(), Image.SCALE_SMOOTH)));
 				openNetworkFromFilesBtn.setToolTipText("Read network from files");
 			} catch (IOException e) {
@@ -1004,7 +999,7 @@ public class TariffZonesView extends JFrame {
 			createNewBtn.setSize(new Dimension(32, 32));
 			createNewBtn.setContentAreaFilled(false);
 			try {
-				Image img = ImageIO.read(new FileInputStream("resources/images/createNewIcon.png"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/createNewIcon.png"));
 				createNewBtn.setIcon(new ImageIcon(img.getScaledInstance(createNewBtn.getWidth(), createNewBtn.getHeight(), Image.SCALE_SMOOTH)));
 				createNewBtn.setToolTipText("Start new network");
 			} catch (IOException e) {
@@ -1020,7 +1015,7 @@ public class TariffZonesView extends JFrame {
 			cleanMapBtn.setSize(new Dimension(32, 32));
 			cleanMapBtn.setContentAreaFilled(false);
 			try {
-				Image img = ImageIO.read(new FileInputStream("resources/images/clearIcon.png"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/clearIcon.png"));
 				cleanMapBtn.setIcon(new ImageIcon(img.getScaledInstance(cleanMapBtn.getWidth(), cleanMapBtn.getHeight(), Image.SCALE_SMOOTH)));
 				cleanMapBtn.setToolTipText("Clean map");
 			} catch (IOException e) {
@@ -1036,7 +1031,7 @@ public class TariffZonesView extends JFrame {
 			streamsBtn.setSize(new Dimension(32, 32));
 			streamsBtn.setContentAreaFilled(false);
 			try {
-				Image img = ImageIO.read(new FileInputStream("resources/images/flowIcon.png"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/flowIcon.png"));
 				streamsBtn.setIcon(new ImageIcon(img.getScaledInstance(streamsBtn.getWidth(), streamsBtn.getHeight(), Image.SCALE_SMOOTH)));
 				streamsBtn.setToolTipText("Show customer's flow");
 			} catch (IOException e) {
@@ -1052,7 +1047,7 @@ public class TariffZonesView extends JFrame {
 			removeNetoworkBtn.setSize(new Dimension(24, 24));
 			removeNetoworkBtn.setContentAreaFilled(true);
 			try {
-				Image img = ImageIO.read(new FileInputStream("resources/images/removeIcon.png"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/removeIcon.png"));
 				removeNetoworkBtn.setIcon(new ImageIcon(img.getScaledInstance(removeNetoworkBtn.getWidth(), removeNetoworkBtn.getHeight(), Image.SCALE_SMOOTH)));
 				removeNetoworkBtn.setToolTipText("Delete network");
 			} catch (IOException e) {
@@ -1068,7 +1063,7 @@ public class TariffZonesView extends JFrame {
 				connectToDBBtn = new JButton();
 				connectToDBBtn.setSize(new Dimension(24, 24));
 				connectToDBBtn.setContentAreaFilled(false);
-				Image img = ImageIO.read(new FileInputStream("resources/images/databaseConnectionIcon.png"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/databaseConnectionIcon.png"));
 				connectToDBBtn.setIcon(new ImageIcon(img.getScaledInstance(connectToDBBtn.getWidth(), connectToDBBtn.getHeight(), Image.SCALE_SMOOTH)));
 				connectToDBBtn.setToolTipText("Connect to database");
 			} catch (IOException e) {
@@ -1200,7 +1195,7 @@ public class TariffZonesView extends JFrame {
 			exportStopsToCSVMenuItem = new JMenuItem("Export Stops To CSV");
 			Image img;
 			try {
-				img = ImageIO.read(new FileInputStream("resources/images/exportIcon.png"));
+				img = ImageIO.read(ClassLoader.class.getResourceAsStream("/exportIcon.png"));
 				exportStopsToCSVMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -1214,7 +1209,7 @@ public class TariffZonesView extends JFrame {
 			exportWaysToCSVMenuItem = new JMenuItem("Export Ways To CSV");
 			Image img;
 			try {
-				img = ImageIO.read(new FileInputStream("resources/images/exportIcon.png"));
+				img = ImageIO.read(ClassLoader.class.getResourceAsStream("/exportIcon.png"));
 				exportWaysToCSVMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -1228,7 +1223,7 @@ public class TariffZonesView extends JFrame {
 			stopEditMenuItem = new JMenuItem("Edit");
 			Image img;
 			try {
-				img = ImageIO.read(new FileInputStream("resources/images/editIcon.png"));
+				img = ImageIO.read(ClassLoader.class.getResourceAsStream("/editIcon.png"));
 				stopEditMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -1242,7 +1237,7 @@ public class TariffZonesView extends JFrame {
 			stopDeleteMenuItem = new JMenuItem("Delete");
 			Image img;
 			try {
-				img = ImageIO.read(new FileInputStream("resources/images/removeIcon.png"));
+				img = ImageIO.read(ClassLoader.class.getResourceAsStream("/removeIcon.png"));
 				stopDeleteMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -1256,7 +1251,7 @@ public class TariffZonesView extends JFrame {
 			wayEditMenuItem = new JMenuItem("Edit");
 			Image img;
 			try {
-				img = ImageIO.read(new FileInputStream("resources/images/editIcon.png"));
+				img = ImageIO.read(ClassLoader.class.getResourceAsStream("/editIcon.png"));
 				wayEditMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -1270,7 +1265,7 @@ public class TariffZonesView extends JFrame {
 			wayDeleteMenuItem = new JMenuItem("Delete");
 			Image img;
 			try {
-				img = ImageIO.read(new FileInputStream("resources/images/removeIcon.png"));
+				img = ImageIO.read(ClassLoader.class.getResourceAsStream("/removeIcon.png"));
 				wayDeleteMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -1284,7 +1279,7 @@ public class TariffZonesView extends JFrame {
 			deleteFromStopTableMenuItem = new JMenuItem("Delete Selected");
 			Image img;
 			try {
-				img = ImageIO.read(new FileInputStream("resources/images/removeIcon.png"));
+				img = ImageIO.read(ClassLoader.class.getResourceAsStream("/removeIcon.png"));
 				deleteFromStopTableMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -1298,7 +1293,7 @@ public class TariffZonesView extends JFrame {
 			deleteFromWayTableMenuItem = new JMenuItem("Delete Selected");
 			Image img;
 			try {
-				img = ImageIO.read(new FileInputStream("resources/images/removeIcon.png"));
+				img = ImageIO.read(ClassLoader.class.getResourceAsStream("/removeIcon.png"));
 				deleteFromWayTableMenuItem.setIcon(new ImageIcon(img.getScaledInstance(12, 12, Image.SCALE_SMOOTH)));
 			} catch (IOException e) {
 				e.printStackTrace();

@@ -12,7 +12,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
@@ -358,7 +357,7 @@ public class ColorZoneChooserPl extends JPanel {
 				odMatrixBtn = new JButton();
 				odMatrixBtn.setSize(new Dimension(24, 24));
 				odMatrixBtn.setContentAreaFilled(false);
-				Image img = ImageIO.read(new FileInputStream("resources/images/browseFoldersIcon.png"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/browseFoldersIcon.png"));
 				odMatrixBtn.setIcon(new ImageIcon(img.getScaledInstance(odMatrixBtn.getWidth(), odMatrixBtn.getHeight(), Image.SCALE_SMOOTH)));
 				odMatrixBtn.setToolTipText("Select OD matrix file");
 				odMatrixBtn.setEnabled(false);
@@ -392,7 +391,7 @@ public class ColorZoneChooserPl extends JPanel {
 				pricesBtn = new JButton();
 				pricesBtn.setSize(new Dimension(24, 24));
 				pricesBtn.setContentAreaFilled(false);
-				Image img = ImageIO.read(new FileInputStream("resources/images/browseFoldersIcon.png"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/browseFoldersIcon.png"));
 				pricesBtn.setIcon(new ImageIcon(img.getScaledInstance(pricesBtn.getWidth(), pricesBtn.getHeight(), Image.SCALE_SMOOTH)));
 				pricesBtn.setToolTipText("Select prices file");
 				pricesBtn.setEnabled(false);
@@ -470,7 +469,7 @@ public class ColorZoneChooserPl extends JPanel {
 				e1Btn = new JButton();
 				e1Btn.setSize(new Dimension(48, 48));
 				e1Btn.setBackground(Color.WHITE);
-				Image img = ImageIO.read(new FileInputStream("resources/images/e1.jpg"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/e1.jpg"));
 				e1Btn.setIcon(new ImageIcon(img.getScaledInstance(e1Btn.getWidth(), e1Btn.getHeight(), Image.SCALE_SMOOTH)));
 				e1Btn.setBorder(new LineBorder(Color.BLUE, 2));
 				
@@ -499,7 +498,7 @@ public class ColorZoneChooserPl extends JPanel {
 				e2Btn = new JButton();
 				e2Btn.setSize(new Dimension(116, 48));
 				e2Btn.setBackground(Color.WHITE);
-				Image img = ImageIO.read(new FileInputStream("resources/images/e2.jpg"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/e2.jpg"));
 				e2Btn.setIcon(new ImageIcon(img.getScaledInstance(e2Btn.getWidth(), e2Btn.getHeight(), Image.SCALE_SMOOTH)));
 				e2Btn.setBorder(new LineBorder(Color.WHITE, 2));
 				
@@ -528,7 +527,7 @@ public class ColorZoneChooserPl extends JPanel {
 				e3Btn = new JButton();
 				e3Btn.setSize(new Dimension(116, 48));
 				e3Btn.setBackground(Color.WHITE);
-				Image img = ImageIO.read(new FileInputStream("resources/images/e3.jpg"));
+				Image img = ImageIO.read(ClassLoader.class.getResourceAsStream("/e3.jpg"));
 				e3Btn.setIcon(new ImageIcon(img.getScaledInstance(e3Btn.getWidth(), e3Btn.getHeight(), Image.SCALE_SMOOTH)));
 				e3Btn.setBorder(new LineBorder(Color.WHITE, 2));
 				

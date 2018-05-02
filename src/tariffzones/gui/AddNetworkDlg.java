@@ -125,7 +125,7 @@ public class AddNetworkDlg extends JPanel {
 			iconLabel.setFont(new Font(iconLabel.getFont().getName(), Font.BOLD, 16));
 			Image img;
 			try {
-				img = ImageIO.read(new FileInputStream("resources/images/networkIcon.png"));
+				img = ImageIO.read(ClassLoader.class.getResourceAsStream("/networkIcon.png"));
 				iconLabel.setIcon(new ImageIcon(img.getScaledInstance(32, 32, Image.SCALE_SMOOTH)));
 			} catch (IOException e) {
 				e.printStackTrace();
